@@ -1,0 +1,89 @@
+<div class="main-dashboard">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Tableau de bord</h1>
+    <p>Bienvenue, {{ userName }} !</p>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card pending">
+      <div class="card-icon">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+      <div class="card-info">
+        <p>Demandes en attente</p>
+        <h2>{{ pendingRequests }}</h2>
+      </div>
+    </div>
+    <div class="stat-card accepted">
+      <div class="card-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="card-info">
+        <p>Demandes acceptées</p>
+        <h2>{{ acceptedRequests }}</h2>
+      </div>
+    </div>
+    <div class="stat-card rejected">
+      <div class="card-icon">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="card-info">
+        <p>Demandes refusées</p>
+        <h2>{{ rejectedRequests }}</h2>
+      </div>
+    </div>
+    <div class="stat-card users">
+      <div class="card-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="card-info">
+        <p>Utilisateurs</p>
+        <h2>{{ users }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-area">
+
+    <!-- Recent Activities -->
+    <div class="activities-card">
+      <h3><i class="fas fa-history"></i> Activités Récentes</h3>
+      <div class="activity-list">
+        <div *ngFor="let activity of recentActivities" class="activity-item">
+          <div [class]="'activity-icon ' + getActivityIconClass(activity.type)">
+            <i [class]="getActivityIcon(activity.type)"></i>
+          </div>
+          <div class="activity-details">
+            <p>{{ activity.text }}</p>
+            <span>{{ activity.time }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Holidays -->
+    <div class="holidays-card">
+      <h3><i class="fas fa-calendar-alt"></i> Jours Fériés à Venir</h3>
+      <div class="holiday-list">
+        <div *ngFor="let holiday of upcomingHolidays" class="holiday-item">
+          <div class="holiday-date">
+            <p>{{ holiday.date | date: 'MMM' }}</p>
+            <span>{{ holiday.date | date: 'd' }}</span>
+          </div>
+          <div class="holiday-info">
+            <p>{{ holiday.name }}</p>
+            <span [class]="getDaysUntil(holiday.date) < 7 ? 'urgent' : ''">
+              {{ getDaysUntil(holiday.date) > 0 ? 'Dans ' + getDaysUntil(holiday.date) + ' jours' : 'Passé' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

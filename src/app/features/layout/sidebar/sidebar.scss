@@ -1,0 +1,144 @@
+:host {
+  --sidebar-bg: #ffffff;
+  --sidebar-text-color: #333;
+  --sidebar-hover-bg: #f0f0f0;
+  --sidebar-active-bg: #e0e7ff;
+  --sidebar-active-text: #4f46e5;
+  --border-color: #e5e7eb;
+  --icon-color: #6b7280;
+}
+
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+
+  &.collapsed {
+    width: 80px;
+
+    .logo-text,
+    .submenu-arrow,
+    .nav-menu span {
+      display: none;
+    }
+
+    .nav-menu a {
+      justify-content: center;
+    }
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .logo-img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--sidebar-text-color);
+      white-space: nowrap;
+    }
+  }
+
+  .toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--icon-color);
+  }
+}
+
+.nav-menu {
+  list-style: none;
+  padding: 16px 0;
+  margin: 0;
+  flex-grow: 1;
+
+  li {
+    margin: 0 12px;
+
+    a {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--sidebar-text-color);
+      font-weight: 500;
+      gap: 16px;
+      white-space: nowrap;
+      transition: background-color 0.2s, color 0.2s;
+
+      i {
+        font-size: 18px;
+        width: 20px;
+        text-align: center;
+        color: var(--icon-color);
+      }
+
+      &:hover {
+        background-color: var(--sidebar-hover-bg);
+      }
+
+      &.active {
+        background-color: var(--sidebar-active-bg);
+        color: var(--sidebar-active-text);
+
+        i {
+          color: var(--sidebar-active-text);
+        }
+      }
+    }
+  }
+
+  .has-submenu {
+    &.open > a .submenu-arrow {
+      transform: rotate(180deg);
+    }
+
+    a .submenu-arrow {
+      margin-left: auto;
+      font-size: 14px;
+      transition: transform 0.3s;
+    }
+  }
+
+  .submenu {
+    list-style: none;
+    padding-left: 28px; 
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+
+    &.open {
+      max-height: 200px; 
+    }
+
+    li a {
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+  }
+}

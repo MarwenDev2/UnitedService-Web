@@ -1,0 +1,44 @@
+<nav class="navbar" [class.sidebar-collapsed]="isCollapsed">
+  <div class="navbar-left">
+    <div class="logo">
+      <img src="../../../../assets/logo.png" alt="Logo" class="logo-img">
+      <span class="logo-text">United Service</span>
+    </div>
+    <div class="search-bar">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" class="search-input" placeholder="Search...">
+    </div>
+  </div>
+  
+  <div class="navbar-right">
+    <div class="nav-item">
+      <i class="fas fa-bell"></i>
+      <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+    </div>
+    <div class="nav-item" (click)="toggleUserMenu()">
+      <div class="user-avatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="user-menu" [class.show]="showUserMenu">
+        <div class="user-info">
+          <div class="user-name">{{ userName }}</div>
+          <div class="user-email">userEmail</div>
+        </div>
+        <div class="menu-divider"></div>
+        <a href="#" class="menu-item">
+          <i class="fas fa-user"></i>
+          <span>My Profile</span>
+        </a>
+        <a href="#" class="menu-item">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+        <div class="menu-divider"></div>
+        <a href="#" class="menu-item text-danger">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,67 @@
+<div class="conge-management-container">
+  <div class="header">
+    <h1 class="title">🗂️ Gestion des demandes de congés</h1>
+    <p class="subtitle">Tableau de bord administratif des demandes de congés</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-label">⏳ En attente</span>
+      <span class="stat-value">{{ stats.pending }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">✅ Acceptées</span>
+      <span class="stat-value">{{ stats.accepted }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">❌ Refusées</span>
+      <span class="stat-value">{{ stats.refused }}</span>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <label for="statusFilter" class="form-label">🔎 Statut :</label>
+    <select id="statusFilter" [(ngModel)]="selectedStatus" (ngModelChange)="loadTableData()" class="form-control">
+      <option value="TOUS">Tous</option>
+      <option *ngFor="let status of statusOptions" [value]="status">{{ formatStatus(status) }}</option>
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>👤 Demandeur</th>
+          <th>🗓️ Période</th>
+          <th>📅 Durée</th>
+          <th>📝 Motif</th>
+          <th>🚦 Statut</th>
+          <th>🛠 Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let demande of (demandes$ | async)">
+          <td>{{ demande.worker?.name || 'N/A' }}</td>
+          <td>{{ demande.startDate }} - {{ demande.endDate }}</td>
+          <td>{{ calculateDuration(demande.startDate, demande.endDate) }} jours</td>
+          <td>{{ demande.reason }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="'status-' + demande.status.toLowerCase()">
+              {{ formatStatus(demande.status) }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons" *ngIf="demande.status.startsWith('EN_ATTENTE')">
+              <button class="btn btn-approve" (click)="handleApproval(demande, true)">✔</button>
+              <button class="btn btn-refuse" (click)="handleApproval(demande, false)">✖</button>
+            </div>
+            <button class="btn btn-view">👁</button> <!-- Add view functionality later -->
+          </td>
+        </tr>
+        <tr *ngIf="(demandes$ | async)?.length === 0">
+          <td colspan="6" class="text-center">Aucune demande à afficher.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

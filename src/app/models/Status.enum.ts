@@ -1,0 +1,7 @@
+export enum Status {
+    EN_ATTENTE_RH = 'EN_ATTENTE_RH',
+    REFUSE_RH = 'REFUSE_RH',
+    EN_ATTENTE_ADMIN = 'EN_ATTENTE_ADMIN',
+    REFUSE_ADMIN = 'REFUSE_ADMIN',
+    ACCEPTE = 'ACCEPTE'
+  }  

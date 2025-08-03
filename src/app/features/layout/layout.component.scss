@@ -1,0 +1,45 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-container {
+  display: flex;
+  height: 100%;
+}
+
+.main-container {
+  flex-grow: 1;
+  margin-left: 260px; /* Default sidebar width */
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.content-area {
+  padding: 94px 24px 24px; /* 70px navbar height + 24px top padding */
+  flex-grow: 1;
+}
+
+/* Adjust layout when sidebar is collapsed */
+.layout-container.sidebar-collapsed .main-container {
+  margin-left: 80px; /* Collapsed sidebar width */
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .main-container {
+    margin-left: 0;
+  }
+}
+
+.main-panel {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+}

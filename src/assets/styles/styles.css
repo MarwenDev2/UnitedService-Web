@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 70px;
+    }
+    .main-content {
+      margin-left: 70px;
+    }
+    .navbar {
+      width: calc(100% - 70px);
+      left: 70px;
+    }
+  }

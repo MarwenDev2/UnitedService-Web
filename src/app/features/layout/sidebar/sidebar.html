@@ -1,0 +1,47 @@
+<div class="sidebar" [class.collapsed]="isCollapsed">
+  <div class="sidebar-header">
+    <div class="logo">
+      <img src="assets/logo.png" alt="Logo" class="logo-img">
+      <span class="logo-text" *ngIf="!isCollapsed">United Service</span>
+    </div>
+    <button class="toggle-btn" (click)="toggleCollapse()">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+
+  <ul class="nav-menu">
+    <li>
+      <a routerLink="/dashboard" [class.active]="isActive('dashboard')">
+        <i class="fas fa-tachometer-alt"></i>
+        <span *ngIf="!isCollapsed">Tableau de Bord</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/conges" [class.active]="isActive('conges')">
+        <i class="fas fa-calendar-alt"></i>
+        <span *ngIf="!isCollapsed">Demandes Congés</span>
+      </a>
+    </li>
+    <li class="has-submenu" [class.open]="isUserSubmenuOpen">
+      <a href="#" (click)="toggleUserSubmenu($event)">
+        <i class="fas fa-users"></i>
+        <span *ngIf="!isCollapsed">Utilisateurs</span>
+        <i class="fas fa-chevron-down submenu-arrow" *ngIf="!isCollapsed"></i>
+      </a>
+      <ul class="submenu" [class.open]="isUserSubmenuOpen">
+        <li>
+          <a routerLink="/utilisateurs/liste" [class.active]="isActive('utilisateurs/liste')">
+            <i class="fas fa-list"></i>
+            <span *ngIf="!isCollapsed">Liste des Employés</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/utilisateurs/ajouter" [class.active]="isActive('utilisateurs/ajouter')">
+            <i class="fas fa-plus"></i>
+            <span *ngIf="!isCollapsed">Ajouter Employé</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
