@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
-
+import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -18,6 +18,7 @@ export class LoginComponent {
   router = inject(Router);
   
   loginError = false;
+  private loginErrorSubscription: Subscription | undefined;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -27,19 +28,25 @@ export class LoginComponent {
     });
   }
 
+
+  ngOnInit(): void {
+    // Subscribe to login error status
+    this.loginErrorSubscription = this.authService.loginError$.subscribe((error: any) => {
+      this.loginError = !!error;
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Clean up subscription
+    this.loginErrorSubscription?.unsubscribe();
+  }
+
   onSubmit(): void {
     if (this.loginForm.valid) {
       const { email, password, rememberMe } = this.loginForm.value;
-      this.authService.login({ email, password }, rememberMe).subscribe({
-        next: (user) => {
-          if (user) {
-            this.router.navigate(['/dashboard']);
-          } else {
-            this.loginError = true;
-          }
-        },
-        error: () => {
-          this.loginError = true;
+      this.authService.login({ email, password }, rememberMe).subscribe(user => {
+        if (user) {
+          this.router.navigate(['/dashboard']);
         }
       });
     }

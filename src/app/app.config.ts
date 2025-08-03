@@ -4,6 +4,7 @@ import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@a
 
 import { routes } from './app.routes';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { AuthGuard } from './core/guards/auth.guard';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,5 +16,6 @@ export const appConfig: ApplicationConfig = {
       useClass: AuthInterceptor,
       multi: true,
     },
+    AuthGuard,
   ],
 };

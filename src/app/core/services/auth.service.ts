@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { NgZone } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, tap, switchMap, take, map, filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -19,25 +20,36 @@ const decode = (token: string) => {
 export class AuthService {
   private readonly TOKEN_KEY = 'united_auth_token';
   private readonly USER_KEY = 'united_user_data';
+  private readonly SESSION_START_KEY = 'united_session_start_time';
   private readonly API_URL = '/api/auth';
   private authStateChecked = false;
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
+  private loginErrorSubject = new BehaviorSubject<string | null>(null);
+  loginError$ = this.loginErrorSubject.asObservable();
 
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   private tokenSubject = new BehaviorSubject<string | null>(null);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private zone = inject(NgZone);
   private redirectUrl: string | null = null;
-  constructor() {
+
+  constructor() { }
+
+  initAuthState(): void {
+    this.checkSessionTimeout();
     const token = this.getToken();
     if (token && this.isValidToken(token)) {
       this.tokenSubject.next(token);
       this.isAuthenticatedSubject.next(true);
-      this.getMe().subscribe(); // Fetch user data on init
+      this.getMe().subscribe(() => {
+        this.authStateChecked = true;
+      });
     } else {
       this.isAuthenticatedSubject.next(false);
+      this.authStateChecked = true;
     }
   }
 
@@ -48,27 +60,27 @@ export class AuthService {
   getMe(): Observable<User | null> {
     const token = this.getToken();
     if (!token) {
-        console.error('No token available for getMe request');
-        return of(null);
+      console.error('No token available for getMe request');
+      return of(null);
     }
-    console.log('Sending getMe request with token:', token); // Debug log
+    console.log('Sending getMe request with token:', token);
     return this.http.get<User>('/api/users/me', {
-        headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` }
     }).pipe(
-        tap(user => {
-            console.log('User data fetched:', user); // Debug log
-            const storage = this.getStorage();
-            storage.setItem(this.USER_KEY, JSON.stringify(user));
-            this.userSubject.next(user);
-            this.isAuthenticatedSubject.next(true);
-        }),
-        catchError(error => {
-            console.error('Failed to fetch user data:', error);
-            this.logout();
-            return of(null);
-        })
+      tap(user => {
+        console.log('User data fetched:', user);
+        const storage = this.getStorage();
+        storage.setItem(this.USER_KEY, JSON.stringify(user));
+        this.userSubject.next(user);
+        this.isAuthenticatedSubject.next(true);
+      }),
+      catchError(error => {
+        console.error('Failed to fetch user data:', error);
+        this.logout();
+        return of(null);
+      })
     );
-}
+  }
   
   setRedirectUrl(url: string): void {
     this.redirectUrl = url;
@@ -84,8 +96,15 @@ export class AuthService {
       map(() => true)
     );
   }
+
   get currentToken(): string | null {
     return this.tokenSubject.value;
+  }
+
+  checkAuthStatus(): Observable<boolean> {
+    return this.authStateInitialized().pipe(
+      map(() => this.isAuthenticated)
+    );
   }
 
   get isAuthenticated(): boolean {
@@ -95,44 +114,48 @@ export class AuthService {
 
   login(credentials: { email: string; password: string }, rememberMe: boolean = false): Observable<User | null> {
     return this.http.post<{ token: string }>(`${this.API_URL}/login`, credentials).pipe(
-        tap(response => {
-            if (response && response.token) {
-                const storage = rememberMe ? localStorage : sessionStorage;
-                storage.setItem(this.TOKEN_KEY, response.token);
-                this.tokenSubject.next(response.token); // Update token subject
-            } else {
-                throw new Error('No token received from login');
-            }
-        }),
-        switchMap(() => this.getMe()),
-        tap(user => {
-            if (user) {
-                this.router.navigate(['/dashboard']);
-            } else {
-                throw new Error('Failed to fetch user data after login');
-            }
-        }),
-        catchError(error => {
-            console.error('Login failed:', error.message);
-            this.logout();
-            return of(null);
-        })
+      tap(response => {
+        if (response && response.token) {
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem(this.TOKEN_KEY, response.token);
+          storage.setItem(this.SESSION_START_KEY, new Date().getTime().toString());
+          this.tokenSubject.next(response.token);
+          console.log('Token stored:', response.token);
+          this.loginErrorSubject.next(null); // Clear previous errors
+        } else {
+          throw new Error('No token received from login');
+        }
+      }),
+      switchMap(() => this.getMe()),
+      tap(user => {
+        if (!user) {
+            this.loginErrorSubject.next('Failed to fetch user data after login');
+        }
+      }),
+      catchError(error => {
+        console.error('Login failed:', error.message);
+        this.loginErrorSubject.next(error.message || 'Unable to log in. Please check your email and password.');
+        this.logout();
+        return of(null);
+      })
     );
-}
+  }
 
   logout(): void {
     const storage = this.getStorage();
     storage.removeItem(this.TOKEN_KEY);
     storage.removeItem(this.USER_KEY);
+    storage.removeItem(this.SESSION_START_KEY);
 
-    // Also clear the other storage just in case
     const otherStorage = storage === localStorage ? sessionStorage : localStorage;
     otherStorage.removeItem(this.TOKEN_KEY);
     otherStorage.removeItem(this.USER_KEY);
+    otherStorage.removeItem(this.SESSION_START_KEY);
 
     this.userSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.tokenSubject.next(null);
+    this.loginErrorSubject.next(null);
     this.router.navigate(['/login']);
   }
 
@@ -149,6 +172,19 @@ export class AuthService {
     const storage = rememberMe ? localStorage : sessionStorage;
     storage.setItem(this.TOKEN_KEY, token);
     storage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  private checkSessionTimeout(): void {
+    const startTimeString = this.getStorage().getItem(this.SESSION_START_KEY);
+    if (startTimeString) {
+      const startTime = parseInt(startTimeString, 10);
+      const oneHour = 60 * 60 * 1000;
+      if (new Date().getTime() - startTime > oneHour) {
+        console.log('Session expired, logging out');
+        alert('Session expired, please log in again.');
+        this.logout();
+      }
+    }
   }
 
   private isValidToken(token: string): boolean {

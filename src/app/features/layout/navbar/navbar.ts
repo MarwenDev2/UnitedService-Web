@@ -1,5 +1,8 @@
-import { Component, HostListener, Input, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../core/services/auth.service';
+import { User } from '../../../models/User.model';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -10,15 +13,13 @@ import { CommonModule } from '@angular/common';
 })
 export class Navbar implements OnInit {
   @Input() isCollapsed = false;
+  private authService = inject(AuthService);
+  user$: Observable<User | null> = this.authService.user$;
 
   constructor() { }
 
   ngOnInit(): void {
   }
-  
-  // User information
-  userName = 'Bob Martin';
-  userRole = 'Ressources Humaines';
   
   // Menu states
   showUserMenu = false;
@@ -29,6 +30,10 @@ export class Navbar implements OnInit {
   // Toggle user menu
   toggleUserMenu() {
     this.showUserMenu = !this.showUserMenu;
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
   
   // Close dropdown when clicking outside
