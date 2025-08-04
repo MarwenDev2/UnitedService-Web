@@ -17,6 +17,16 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'conges',
+        loadComponent: () => import('./features/conges-management/conges-management').then(c => c.CongesManagement),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'workers',
+        loadComponent: () => import('./features/workers-list/workers-list').then(c => c.WorkersListComponent),
+        canActivate: [AuthGuard],
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

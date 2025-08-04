@@ -32,11 +32,11 @@ html, body {
 
 .content-area {
   flex: 1;
-  padding: 20px;
-  margin-top: 70px; /* Navbar height */
+  padding: 1rem 1.5rem; /* Reduce top/bottom padding */
+  margin-top: 30px; /* Use the variable for navbar height */
   overflow-y: auto;
   background-color: var(--bg-primary);
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--header-height));
 }
 
 /* Ensure the sidebar is above content */

@@ -1,0 +1,57 @@
+<div class="container-fluid workers-list-page">
+  <!-- Header -->
+  <div class="header-box">
+    <h1 class="page-title">Gestion des Employés</h1>
+    <div class="filter-box">
+      <select class="form-control" [ngModel]="(selectedDepartment | async)" (ngModelChange)="selectedDepartment.next($event)">
+        <option *ngFor="let dept of departments$ | async" [value]="dept">{{ dept }}</option>
+      </select>
+      <input type="text" class="form-control" placeholder="Rechercher..." [ngModel]="(searchTerm | async)" (ngModelChange)="searchTerm.next($event)"/>
+    </div>
+  </div>
+
+  <!-- Workers Container -->
+  <div class="scroll-pane">
+    <div class="workers-container">
+      <div *ngFor="let worker of filteredWorkers$ | async; let i = index" class="worker-card" [style.animation-delay]="i * 70 + 'ms'">
+        <!-- Card Header -->
+        <div class="card-header">
+          <img [src]="getAvatar(worker)" alt="Avatar" class="worker-avatar" 
+               (error)="handleImageError($event, worker)">
+          <div class="name-box">
+            <div class="worker-name">{{ worker.name }}</div>
+            <div class="worker-position">{{ worker.position }}</div>
+          </div>
+        </div>
+
+        <!-- Card Details -->
+        <div class="card-details">
+          <div class="detail-row"><i class="fas fa-phone"></i><span>{{ worker.phone }}</span></div>
+          <div class="detail-row"><i class="fas fa-envelope"></i><span>{{ worker.email }}</span></div>
+          <div class="detail-row"><i class="fas fa-building"></i><span>{{ worker.department }}</span></div>
+          <div class="detail-row"><i class="fas fa-calendar-alt"></i><span>Embauche: {{ worker.creationDate | date:'yyyy-MM-dd' }}</span></div>
+          <div class="detail-row"><i class="fas fa-money-bill-wave"></i><span>Salaire: {{ worker.salary | number:'1.2-2' }} TND</span></div>
+          <div class="status-container">
+            <span class="status-badge" [ngClass]="{'status-active': worker.status.toLowerCase() === 'actif', 'status-inactive': worker.status.toLowerCase() !== 'actif'}">
+              {{ worker.status | uppercase }}
+            </span>
+            <span *ngIf="worker.usedCongeDays > 0" class="status-badge status-leave">EN CONGÉ</span>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="button-container">
+          <button class="btn history-button"><i class="fas fa-history"></i> Historique</button>
+          <button class="btn edit-button"><i class="fas fa-pencil-alt"></i> Modifier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Stats -->
+  <div class="stats-box">
+    <div class="stat-label">Total: {{(stats$ | async)?.total}}</div>
+    <div class="stat-label">Actifs: {{(stats$ | async)?.active}}</div>
+    <div class="stat-label">En congé: {{(stats$ | async)?.onLeave}}</div>
+  </div>
+</div>
