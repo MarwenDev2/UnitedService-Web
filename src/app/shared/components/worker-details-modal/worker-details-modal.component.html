@@ -1,0 +1,48 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Détails du salarié</h2>
+      <button class="close-button" (click)="closeModal()">&times;</button>
+    </div>
+        <div class="modal-body" *ngIf="worker">
+      <div class="profile-header">
+        <div class="avatar-frame">
+          <img [src]="getAvatar(worker)" alt="Avatar" class="worker-avatar" (error)="handleImageError($event, worker)">
+        </div>
+        <div class="profile-info">
+          <h3 class="worker-name">{{ worker.name }}</h3>
+          <p class="worker-position">{{ worker.position }}</p>
+          <span class="status-badge" [ngClass]="{'status-active': worker.status.toLowerCase() === 'actif', 'status-inactive': worker.status.toLowerCase() !== 'actif'}">
+            {{ worker.status }}
+          </span>
+        </div>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <i class="fas fa-envelope"></i>
+          <span>{{ worker.email }}</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-phone-alt"></i>
+          <span>{{ worker.phone }}</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-building"></i>
+          <span>{{ worker.department }}</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Embauché le {{ worker.creationDate | date: 'longDate' }}</span>
+        </div>
+        <div class="detail-item detail-item-full">
+          <i class="fas fa-money-bill-wave"></i>
+          <span>{{ worker.salary | number:'1.2-2' }} TND</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+    </div>
+  </div>
+</div>

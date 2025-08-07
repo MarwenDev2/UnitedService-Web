@@ -6,6 +6,7 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, tap, switchMap, take, map, filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { User } from '../../models/User.model';
+import { NotificationService } from './notification.service';
 
 // A simple JWT decoder function
 const decode = (token: string) => {
@@ -21,10 +22,14 @@ export class AuthService {
   private readonly TOKEN_KEY = 'united_auth_token';
   private readonly USER_KEY = 'united_user_data';
   private readonly SESSION_START_KEY = 'united_session_start_time';
-  private readonly API_URL = '/api/auth';
+  private readonly API_URL = `${environment.apiUrl}/api/auth`;
   private authStateChecked = false;
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
+
+  public get currentUserValue(): User | null {
+    return this.userSubject.value;
+  }
   private loginErrorSubject = new BehaviorSubject<string | null>(null);
   loginError$ = this.loginErrorSubject.asObservable();
 
@@ -36,7 +41,9 @@ export class AuthService {
   private zone = inject(NgZone);
   private redirectUrl: string | null = null;
 
-  constructor() { }
+  constructor(private notificationService: NotificationService) { 
+    
+  }
 
   initAuthState(): void {
     this.checkSessionTimeout();
@@ -181,7 +188,7 @@ export class AuthService {
       const oneHour = 60 * 60 * 1000;
       if (new Date().getTime() - startTime > oneHour) {
         console.log('Session expired, logging out');
-        alert('Session expired, please log in again.');
+        this.notificationService.showWarning('Session expired, please log in again.', 'Session Expired');
         this.logout();
       }
     }

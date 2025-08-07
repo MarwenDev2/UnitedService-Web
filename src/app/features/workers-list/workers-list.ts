@@ -1,21 +1,38 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LeaveHistoryModalComponent } from '../../shared/components/leave-history-modal/leave-history-modal.component';
 import { FormsModule } from '@angular/forms';
 import { Observable, BehaviorSubject, of, combineLatest } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { Worker } from '../../models/Worker.model';
 import { WorkerService } from '../../core/services/worker.service';
+import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { Role } from '../../models/Role.enum';
 import { environment } from '../../../environments/environment';
+import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-workers-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LeaveHistoryModalComponent, ConfirmationModalComponent],
   templateUrl: './workers-list.html',
   styleUrls: ['./workers-list.scss']
 })
 export class WorkersListComponent implements OnInit {
+  isLeaveHistoryVisible = false;
+  selectedWorker: Worker | null = null;
   private workerService = inject(WorkerService);
+  private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
+
+  // User Role
+  isAdmin = false;
+
+  // Confirmation Modal State
+  isConfirmationModalVisible = false;
+  modalConfig = { title: '', message: '', confirmButtonText: 'Confirm' };
+  private workerToUpdate: Worker | null = null;
 
   private workers$ = new BehaviorSubject<Worker[]>([]);
   filteredWorkers$: Observable<Worker[]> = of([]);
@@ -30,6 +47,7 @@ export class WorkersListComponent implements OnInit {
   public stats$ = new BehaviorSubject<{ total: number; active: number; onLeave: number }>({ total: 0, active: 0, onLeave: 0 });
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.currentUserValue?.role === Role.ADMIN;
     this.loadInitialData();
     this.setupFiltering();
   }
@@ -98,5 +116,59 @@ export class WorkersListComponent implements OnInit {
       : `${environment.apiUrl}/Users/default-male.png`;
     console.log('Image failed to load for', worker.name, ', falling back to:', defaultUrl);
     imgElement.src = defaultUrl;
+  }
+
+  openLeaveHistory(worker: Worker): void {
+    this.selectedWorker = worker;
+    this.isLeaveHistoryVisible = true;
+  }
+
+  closeLeaveHistory(): void {
+    this.isLeaveHistoryVisible = false;
+    this.selectedWorker = null;
+  }
+
+  // --- Status Change Logic ---
+
+  promptChangeStatus(worker: Worker): void {
+    if (!this.isAdmin) return;
+
+    this.workerToUpdate = worker;
+    const newStatus = worker.status === 'actif' ? 'inactif' : 'actif';
+    const newStatusFrench = newStatus === 'actif' ? 'actif' : 'inactif';
+
+    this.modalConfig = {
+      title: 'Confirmation de changement de statut',
+      message: `Êtes-vous sûr de vouloir changer le statut de ${worker.name} à "${newStatusFrench}" ?`,
+      confirmButtonText: 'Confirmer',
+    };
+
+    this.isConfirmationModalVisible = true;
+  }
+
+  onStatusChangeConfirm(): void {
+    if (!this.workerToUpdate) return;
+
+    const worker = this.workerToUpdate;
+    const newStatus = worker.status === 'actif' ? 'inactif' : 'actif';
+
+        const updatedWorker = { ...worker, status: newStatus as 'actif' | 'inactif' };
+    this.workerService.updateWorker(worker.id, updatedWorker).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Le statut de ${worker.name} a été mis à jour.`);
+        this.loadInitialData(); // Reload data to reflect the change
+      },
+      error: () => {
+        this.notificationService.showError('Une erreur est survenue lors de la mise à jour.');
+      },
+      complete: () => {
+        this.onStatusChangeCancel();
+      }
+    });
+  }
+
+  onStatusChangeCancel(): void {
+    this.isConfirmationModalVisible = false;
+    this.workerToUpdate = null;
   }
 }

@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Worker } from '../../models/Worker.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WorkerService {
   private http = inject(HttpClient);
-  private readonly API_URL = '/api/workers';
+  private readonly API_URL = `${environment.apiUrl}/api/workers`;
 
   constructor() { }
 
@@ -18,6 +19,10 @@ export class WorkerService {
 
   getWorkerById(id: number): Observable<Worker> {
     return this.http.get<Worker>(`${this.API_URL}/${id}`);
+  }
+
+  getWorkerByCin(cin: string): Observable<Worker> {
+    return this.http.get<Worker>(`${this.API_URL}/cin/${cin}`);
   }
 
   getWorkerPhotoUrl(id: number): Observable<string> {
@@ -34,7 +39,7 @@ export class WorkerService {
     return this.http.post<Worker>(this.API_URL, worker);
   }
 
-  updateWorker(id: number, worker: Partial<Worker>): Observable<Worker> {
+  updateWorker(id: number, worker: Worker): Observable<Worker> {
     return this.http.put<Worker>(`${this.API_URL}/${id}`, worker);
   }
 

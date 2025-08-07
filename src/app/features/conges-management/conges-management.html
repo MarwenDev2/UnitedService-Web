@@ -11,7 +11,7 @@
     </div>
     <div class="stat-card">
       <span class="stat-label">✅ Acceptées</span>
-      <span class="stat-value">{{ stats.accepted }}</span>
+      <span class="stat-value">{{ stats.approved }}</span>
     </div>
     <div class="stat-card">
       <span class="stat-label">❌ Refusées</span>
@@ -21,7 +21,7 @@
 
   <div class="filters-row">
     <label for="statusFilter" class="form-label">🔎 Statut :</label>
-    <select id="statusFilter" [(ngModel)]="selectedStatus" (ngModelChange)="loadTableData()" class="form-control">
+    <select id="statusFilter" [(ngModel)]="selectedStatus" (ngModelChange)="filterDemandes()" class="form-control">
       <option value="TOUS">Tous</option>
       <option *ngFor="let status of statusOptions" [value]="status">{{ formatStatus(status) }}</option>
     </select>
@@ -34,17 +34,17 @@
           <th>👤 Demandeur</th>
           <th>🗓️ Période</th>
           <th>📅 Durée</th>
-          <th>📝 Motif</th>
+          
           <th>🚦 Statut</th>
           <th>🛠 Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let demande of (demandes$ | async)">
-          <td>{{ demande.worker?.name || 'N/A' }}</td>
+        <tr *ngFor="let demande of (filteredDemandes$ | async)">
+          <td>{{ demande.worker.name || 'N/A' }}</td>
           <td>{{ demande.startDate }} - {{ demande.endDate }}</td>
           <td>{{ calculateDuration(demande.startDate, demande.endDate) }} jours</td>
-          <td>{{ demande.reason }}</td>
+          
           <td>
             <span class="status-badge" [ngClass]="'status-' + demande.status.toLowerCase()">
               {{ formatStatus(demande.status) }}
@@ -55,13 +55,31 @@
               <button class="btn btn-approve" (click)="handleApproval(demande, true)">✔</button>
               <button class="btn btn-refuse" (click)="handleApproval(demande, false)">✖</button>
             </div>
-            <button class="btn btn-view">👁</button> <!-- Add view functionality later -->
+            <button class="btn btn-view" (click)="viewWorkerDetails(demande.worker)">👁</button>
           </td>
         </tr>
-        <tr *ngIf="(demandes$ | async)?.length === 0">
-          <td colspan="6" class="text-center">Aucune demande à afficher.</td>
+        <tr *ngIf="(filteredDemandes$ | async)?.length === 0">
+          <td colspan="5" class="text-center">Aucune demande à afficher.</td>
         </tr>
       </tbody>
     </table>
+
+<app-confirmation-modal
+  [isVisible]="isConfirmationModalVisible"
+  [title]="modalConfig.title"
+  [message]="modalConfig.message"
+  [showComment]="modalConfig.showComment"
+  [confirmButtonText]="modalConfig.confirmButtonText"
+  [cancelButtonText]="modalConfig.cancelButtonText"
+  (confirmed)="onModalConfirm($event)"
+  (closed)="onModalClose()"
+></app-confirmation-modal>
+
   </div>
 </div>
+
+<app-worker-details-modal 
+  *ngIf="isModalVisible" 
+  [worker]="selectedWorker" 
+  (close)="closeModal()">
+</app-worker-details-modal>

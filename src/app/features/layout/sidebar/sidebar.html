@@ -16,13 +16,40 @@
         <span *ngIf="!isCollapsed">Tableau de Bord</span>
       </a>
     </li>
+    <li class="has-submenu" [class.open]="isUserSubmenuOpen" *ngIf="isSecretaire">
+      <a href="#" (click)="toggleUserSubmenu($event)">
+        <i class="fas fa-users"></i>
+        <span *ngIf="!isCollapsed">Postuler</span>
+        <i class="fas fa-chevron-down submenu-arrow" *ngIf="!isCollapsed"></i>
+      </a>
+      <ul class="submenu" [class.open]="isUserSubmenuOpen">
+        <li>
+          <a routerLink="/request-leave" routerLinkActive="active">
+            <i class="fas fa-file-alt"></i>
+            <span class="text" *ngIf="!isCollapsed">Postuler un congé</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/mission-request" [class.active]="isActive('mission-request')">
+            <i class="fas fa-plus"></i>
+            <span *ngIf="!isCollapsed">Postuler une mission</span>
+          </a>
+        </li>
+      </ul>
+    </li>
     <li>
       <a routerLink="/conges" [class.active]="isActive('conges')">
         <i class="fas fa-calendar-alt"></i>
-        <span *ngIf="!isCollapsed">Demandes Congés</span>
+        <span *ngIf="!isCollapsed">Demandes de congés</span>
       </a>
     </li>
-    <li class="has-submenu" [class.open]="isUserSubmenuOpen">
+    <li>
+      <a routerLink="/missions" [class.active]="isActive('missions')">
+        <i class="fas fa-briefcase"></i>
+        <span *ngIf="!isCollapsed">Ordres de missions</span>
+      </a>
+    </li>
+    <li class="has-submenu" [class.open]="isUserSubmenuOpen" *ngIf="isAdmin || isRh">
       <a href="#" (click)="toggleUserSubmenu($event)">
         <i class="fas fa-users"></i>
         <span *ngIf="!isCollapsed">Utilisateurs</span>
@@ -36,7 +63,7 @@
           </a>
         </li>
         <li>
-          <a routerLink="/utilisateurs/ajouter" [class.active]="isActive('utilisateurs/ajouter')">
+          <a routerLink="/add-worker" [class.active]="isActive('add-worker')">
             <i class="fas fa-plus"></i>
             <span *ngIf="!isCollapsed">Ajouter Employé</span>
           </a>

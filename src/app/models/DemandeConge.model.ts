@@ -4,7 +4,7 @@ import { Decision } from './Decision.model';
 import { TypeConge } from './TypeConge.enum';
 
 export interface DemandeConge {
-  id?: number;
+  id: number;
   worker: Worker;
   type: TypeConge;
   startDate: string;

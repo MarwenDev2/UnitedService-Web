@@ -1,29 +1,75 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
+import { ToastrService, IndividualConfig } from 'ngx-toastr';
 
+/**
+ * A centralized service for displaying toast notifications.
+ * This service wraps the ngx-toastr library to provide a consistent
+ * and professional notification system throughout the application.
+ *
+ * Usage:
+ * 1. Inject NotificationService into your component or service:
+ *    constructor(private notificationService: NotificationService) {}
+ *
+ * 2. Call one of the notification methods:
+ *    this.notificationService.showSuccess('Profile updated successfully!');
+ *    this.notificationService.showError('Failed to load data.');
+ */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NotificationService {
-  private baseUrl = `${environment.apiUrl}/notification`;
+  // Default options for all toasts
+  private toastOptions: Partial<IndividualConfig> = {
+    closeButton: true,       // Show a close button
+    timeOut: 5000,           // Auto-dismiss after 5 seconds
+    progressBar: true,       // Show a progress bar
+    easeTime: 300,           // Animation easing time
+    positionClass: 'toast-top-right', // Position on the screen
+    tapToDismiss: true,      // Dismiss on click
+    newestOnTop: true,       // New toasts appear on top
+    enableHtml: true,        // Allow HTML in the message
+  };
 
-  constructor(private http: HttpClient) {}
+  constructor(private toastr: ToastrService) {}
 
-  getAllNotifications(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/all`);
+  /**
+   * Shows a success notification.
+   * @param message The main message to display.
+   * @param title An optional title for the notification.
+   * @param overrideOptions Optional configuration to override the defaults.
+   */
+  showSuccess(message: string, title?: string, overrideOptions?: Partial<IndividualConfig>): void {
+    this.toastr.success(message, title, { ...this.toastOptions, ...overrideOptions });
   }
 
-  getNotificationsByUser(userId: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/byUser/${userId}`);
+  /**
+   * Shows an error notification.
+   * @param message The main message to display.
+   * @param title An optional title for the notification.
+   * @param overrideOptions Optional configuration to override the defaults.
+   */
+  showError(message: string, title?: string, overrideOptions?: Partial<IndividualConfig>): void {
+    this.toastr.error(message, title, { ...this.toastOptions, ...overrideOptions, timeOut: 7000 }); // Longer timeout for errors
   }
 
-  createNotification(notification: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/add`, notification);
+  /**
+   * Shows a warning notification.
+   * @param message The main message to display.
+   * @param title An optional title for the notification.
+   * @param overrideOptions Optional configuration to override the defaults.
+   */
+  showWarning(message: string, title?: string, overrideOptions?: Partial<IndividualConfig>): void {
+    this.toastr.warning(message, title, { ...this.toastOptions, ...overrideOptions });
   }
 
-  deleteNotification(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/delete/${id}`);
+  /**
+   * Shows an informational notification.
+   * @param message The main message to display.
+   * @param title An optional title for the notification.
+   * @param overrideOptions Optional configuration to override the defaults.
+   */
+  showInfo(message: string, title?: string, overrideOptions?: Partial<IndividualConfig>): void {
+    this.toastr.info(message, title, { ...this.toastOptions, ...overrideOptions });
   }
 }
+

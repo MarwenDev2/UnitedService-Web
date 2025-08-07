@@ -1,3 +1,31 @@
+
+@use 'ngx-toastr/toastr';
+@use '@angular/material' as mat;
+
+/* You can add global styles to this file, and also import other style files */
+
+@include mat.core();
+
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+body {
+  color-scheme: light;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  margin: 0;
+}
+
+
 /* Global Styles */
 /* Font Awesome will be loaded via CDN in index.html */
 * {
@@ -484,3 +512,6 @@ html {
 .animate-scaleIn {
   animation: scaleIn 0.3s var(--transition-timing) forwards;
 }
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

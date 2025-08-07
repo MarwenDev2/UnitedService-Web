@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { LayoutService } from '../layout.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Role } from '../../../models/Role.enum';
+import { User } from '../../../models/User.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -12,15 +15,19 @@ import { LayoutService } from '../layout.service';
   styleUrls: ['./sidebar.scss']
 })
 export class Sidebar implements OnInit, OnDestroy {
+  isSecretaire = false;
+  isAdmin = false;
+  isRh = false;
   isUserSubmenuOpen = false;
   isCollapsed = false;
   private layoutSubscription: Subscription;
   currentRoute: string = '';
 
   constructor(
-    private router: Router, 
+    private router: Router,
     private route: ActivatedRoute,
-    private layoutService: LayoutService
+    private layoutService: LayoutService,
+    private authService: AuthService
   ) {
     this.layoutSubscription = this.layoutService.isCollapsed$.subscribe(
       (collapsed: boolean) => (this.isCollapsed = collapsed)
@@ -28,14 +35,23 @@ export class Sidebar implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const user = this.authService.getUser();
+    this.updateUserRoles(user);
+
     this.updateCurrentRoute();
-    
+
     // Subscribe to route changes
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
       this.updateCurrentRoute();
     });
+  }
+
+  private updateUserRoles(user: User | null): void {
+    this.isSecretaire = user?.role === Role.SECRETAIRE;
+    this.isAdmin = user?.role === Role.ADMIN;
+    this.isRh = user?.role === Role.RH;
   }
 
   updateCurrentRoute(): void {

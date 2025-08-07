@@ -128,6 +128,12 @@
   }
 
   .status-badge {
+    &.status-clickable {
+      cursor: pointer;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-weight: 600;

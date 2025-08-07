@@ -1,0 +1,105 @@
+<div class="add-worker-container">
+  <h2>Ajouter un nouveau salarié</h2>
+  <form [formGroup]="workerForm" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <!-- Left Column -->
+      <div class="form-column">
+        <div class="form-group">
+          <label for="name">Nom complet</label>
+          <input id="name" formControlName="name" placeholder="Entrez le nom complet">
+          <div *ngIf="workerForm.get('name')?.invalid && workerForm.get('name')?.touched" class="error-message">
+            Le nom est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cin">CIN</label>
+          <input id="cin" formControlName="cin" placeholder="Entrez le numéro de CIN">
+          <div *ngIf="workerForm.get('cin')?.invalid && workerForm.get('cin')?.touched" class="error-message">
+            Le CIN doit contenir 8 chiffres.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="department">Département</label>
+          <input id="department" formControlName="department" placeholder="Entrez le département">
+          <div *ngIf="workerForm.get('department')?.invalid && workerForm.get('department')?.touched" class="error-message">
+            Le département est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="position">Poste</label>
+          <input id="position" formControlName="position" placeholder="Entrez le poste">
+          <div *ngIf="workerForm.get('position')?.invalid && workerForm.get('position')?.touched" class="error-message">
+            Le poste est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Téléphone</label>
+          <input id="phone" formControlName="phone" placeholder="Entrez le numéro de téléphone">
+          <div *ngIf="workerForm.get('phone')?.invalid && workerForm.get('phone')?.touched" class="error-message">
+            Le numéro de téléphone doit contenir 8 chiffres.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" formControlName="email" placeholder="Entrez l'adresse email">
+          <div *ngIf="workerForm.get('email')?.invalid && workerForm.get('email')?.touched" class="error-message">
+            L'adresse email est invalide.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="form-column">
+        <div class="form-group">
+          <label for="salary">Salaire (TND)</label>
+          <input id="salary" type="number" formControlName="salary" placeholder="Entrez le salaire">
+          <div *ngIf="workerForm.get('salary')?.invalid && workerForm.get('salary')?.touched" class="error-message">
+            Le salaire est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Genre</label>
+          <select id="gender" formControlName="gender">
+            <option value="Homme">Homme</option>
+            <option value="Femme">Femme</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dateOfBirth">Date de naissance</label>
+          <input id="dateOfBirth" type="date" formControlName="dateOfBirth">
+          <div *ngIf="workerForm.get('dateOfBirth')?.invalid && workerForm.get('dateOfBirth')?.touched" class="error-message">
+            La date de naissance est requise.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Adresse</label>
+          <textarea id="address" formControlName="address" placeholder="Entrez l'adresse"></textarea>
+          <div *ngIf="workerForm.get('address')?.invalid && workerForm.get('address')?.touched" class="error-message">
+            L'adresse est requise.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="profileImage">Photo de profil</label>
+          <input id="profileImage" type="file" (change)="onFileSelected($event)" accept="image/*">
+          <div class="image-preview" *ngIf="imagePreview">
+            <img [src]="imagePreview" alt="Aperçu de l'image">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" [routerLink]="['/workers']">Annuler</button>
+      <button type="submit" class="btn btn-primary" [disabled]="workerForm.invalid">Ajouter</button>
+    </div>
+  </form>
+</div>

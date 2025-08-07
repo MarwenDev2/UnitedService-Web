@@ -1,96 +1,205 @@
 import { Component, OnInit } from '@angular/core';
+import { WorkerDetailsModalComponent } from '../../shared/components/worker-details-modal/worker-details-modal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CongeService } from '../../core/services/conge';
-import { DemandeConge, Status } from '../../models/conge.model';
-import { Observable, forkJoin, map, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { CongeService } from '../../core/services/conge.service';
+import { AuthService } from '../../core/services/auth.service';
+import { DecisionService } from '../../core/services/decision.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { DemandeConge } from '../../models/DemandeConge.model';
+import { Status } from '../../models/Status.enum';
+import { Role } from '../../models/Role.enum';
+import { User } from '../../models/User.model';
+import { Worker } from '../../models/Worker.model';
+import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-conges-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmationModalComponent, WorkerDetailsModalComponent],
   templateUrl: './conges-management.html',
   styleUrls: ['./conges-management.scss']
 })
 export class CongesManagement implements OnInit {
 
-  demandes$: Observable<DemandeConge[]> = of([]);
-  stats = {
-    pending: 0,
-    accepted: 0,
-    refused: 0
+  allDemandes: DemandeConge[] = [];
+  filteredDemandes$: Observable<DemandeConge[]> = of([]);
+  stats = { pending: 0, approved: 0, refused: 0 };
+
+  // Confirmation Modal State
+  isConfirmationModalVisible = false;
+  modalConfig = {
+    title: '',
+    message: '',
+    showComment: false,
+    confirmButtonText: 'Confirm',
+    cancelButtonText: 'Cancel',
   };
+  private activeDecision: { demande: DemandeConge; isApproved: boolean } | null = null;
+  currentUser: User | null = null;
 
+  selectedStatus: string = 'TOUS';
   statusOptions = Object.values(Status);
-  selectedStatus: Status | 'TOUS' = 'TOUS';
 
-  constructor(private congeService: CongeService) { }
+  isModalVisible = false;
+  selectedWorker: Worker | null = null;
+
+  constructor(
+    private congeService: CongeService,
+    private authService: AuthService,
+    private decisionService: DecisionService,
+    private notificationService: NotificationService
+  ) { }
 
   ngOnInit(): void {
-    this.loadTableData();
-    this.loadStats();
+    this.currentUser = this.authService.currentUserValue;
+    this.loadDemandes();
   }
 
-  loadTableData(): void {
-    this.demandes$ = this.congeService.getAllDemandes().pipe(
-      map((demandes: DemandeConge[]) => {
-        if (this.selectedStatus === 'TOUS') {
-          return demandes;
-        }
-        return demandes.filter((d: DemandeConge) => d.status === this.selectedStatus);
-      })
-    );
-  }
-
-  loadStats(): void {
-    forkJoin({
-      pending: this.congeService.countByStatus(Status.EN_ATTENTE_RH),
-      pendingAdmin: this.congeService.countByStatus(Status.EN_ATTENTE_ADMIN),
-      accepted: this.congeService.countByStatus(Status.ACCEPTE),
-      refused: this.congeService.countByStatus(Status.REFUSE_RH),
-      refusedAdmin: this.congeService.countByStatus(Status.REFUSE_ADMIN)
-    }).subscribe((results: { pending: number; pendingAdmin: number; accepted: number; refused: number; refusedAdmin: number; }) => {
-      this.stats.pending = results.pending + results.pendingAdmin;
-      this.stats.accepted = results.accepted;
-      this.stats.refused = results.refused + results.refusedAdmin;
+  loadDemandes(): void {
+    this.congeService.getAllDemandes().subscribe((data: DemandeConge[]) => {
+      this.allDemandes = data;
+      this.calculateStats(data);
+      this.filterDemandes();
     });
+  }
+
+  filterDemandes(): void {
+    let filtered = this.allDemandes;
+    if (this.selectedStatus !== 'TOUS') {
+      filtered = this.allDemandes.filter(d => d.status === this.selectedStatus);
+    }
+    this.filteredDemandes$ = of(filtered);
+  }
+
+  calculateStats(demandes: DemandeConge[]): void {
+    this.stats.pending = demandes.filter(d => d.status.startsWith('EN_ATTENTE')).length;
+    this.stats.approved = demandes.filter(d => d.status === Status.ACCEPTE).length;
+    this.stats.refused = demandes.filter(d => d.status.startsWith('REFUSE')).length;
   }
 
   handleApproval(demande: DemandeConge, isApproved: boolean): void {
-    // This logic assumes a simplified workflow. 
-    // You might need to adapt it based on the current user's role (RH vs. Admin).
-    const role: string = 'ADMIN'; // Replace with actual user role from a session service
+    if (!this.currentUser) return;
 
-    let action: Observable<void>;
+    const role = this.currentUser.role;
+    const isRhStep = role === Role.RH && demande.status === Status.EN_ATTENTE_RH;
+    const isAdminStep = role === Role.ADMIN && demande.status === Status.EN_ATTENTE_ADMIN;
 
-    if (role === 'RH' && demande.status === Status.EN_ATTENTE_RH) {
-      action = this.congeService.updateRHStatus(demande.id, isApproved);
-    } else if (role === 'ADMIN' && demande.status === Status.EN_ATTENTE_ADMIN) {
-      action = this.congeService.finalApprove(demande.id, isApproved);
-    } else {
-      // For simplicity, allowing admin to handle all pending requests
-      if (demande.status === Status.EN_ATTENTE_RH) {
-         action = this.congeService.updateRHStatus(demande.id, isApproved);
-      } else {
-         action = this.congeService.finalApprove(demande.id, isApproved);
-      }
+    if (!isRhStep && !isAdminStep) {
+      this.notificationService.showWarning('You cannot process this request at this stage.', 'Unauthorized Action');
+      return;
     }
 
-    action.subscribe(() => {
-      this.loadTableData();
-      this.loadStats();
-      // Add notification logic here if needed
+    this.activeDecision = { demande, isApproved };
+    const isFinalStep = !isApproved || role === Role.ADMIN;
+
+    this.modalConfig = {
+      title: isApproved ? 'Approve Leave Request' : 'Reject Leave Request',
+      message: isApproved
+        ? `Are you sure you want to approve this leave request for ${demande.worker?.name}?`
+        : `Are you sure you want to reject this leave request for ${demande.worker?.name}?`,
+      showComment: isFinalStep,
+      confirmButtonText: isApproved ? 'Approve' : 'Reject',
+      cancelButtonText: 'Cancel',
+    };
+
+    this.isConfirmationModalVisible = true;
+  }
+
+  onModalConfirm(comment: string | null): void {
+    if (!this.activeDecision || !this.currentUser) return;
+
+    const { demande, isApproved } = this.activeDecision;
+    const role = this.currentUser.role;
+    const isFinalStep = !isApproved || role === Role.ADMIN;
+
+    let updateAction: Observable<any>;
+
+    if (role === Role.RH) {
+      updateAction = this.congeService.updateRHStatus(demande.id, isApproved);
+    } else { // Role.ADMIN
+      updateAction = this.congeService.finalApprove(demande.id, isApproved);
+    }
+
+    updateAction.subscribe(() => {
+      if (isFinalStep) {
+        this.createDecisionAndNotify(demande, isApproved, comment, this.currentUser!);
+      } else {
+        this.createIntermediateNotification(demande, this.currentUser!);
+      }
+    });
+
+    this.onModalClose();
+  }
+
+  onModalClose(): void {
+    this.isConfirmationModalVisible = false;
+    this.activeDecision = null;
+  }
+
+  private createDecisionAndNotify(demande: DemandeConge, isApproved: boolean, comment: string | null, currentUser: User): void {
+    const decision = { approved: isApproved, comment: comment || '', decisionBy: currentUser, date: new Date() };
+    this.decisionService.createDecision(decision).subscribe(() => {
+      this.createNotification(demande, isApproved, true, currentUser);
     });
   }
 
-  calculateDuration(startDate: string, endDate: string): number {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
+  private createIntermediateNotification(demande: DemandeConge, currentUser: User): void {
+    this.createNotification(demande, true, false, currentUser);
+  }
+
+  private createNotification(demande: DemandeConge, isApproved: boolean, isFinal: boolean, currentUser: User): void {
+    const notifMsg = this.createNotificationMessage(demande, isApproved, isFinal, currentUser.role, currentUser.name);
+    const title = isFinal ? 'Decision Registered' : 'Intermediate Step';
+    if (isApproved) {
+      this.notificationService.showSuccess(notifMsg, title);
+    } else {
+      this.notificationService.showWarning(notifMsg, title);
+    }
+    this.loadDemandes();
+  }
+
+  private createNotificationMessage(demande: DemandeConge, isApproved: boolean, isFinal: boolean, role: Role, adminName: string): string {
+    const fullName = demande.worker?.name || 'the employee';
+    const dateRange = `from ${demande.startDate} to ${demande.endDate}`;
+    const roleName = role === Role.ADMIN ? 'Director' : 'HR';
+
+    if (!isApproved) {
+      return `❌ The leave request ${dateRange} for ${fullName} was rejected by ${roleName} (${adminName}).`;
+    }
+    if (isFinal) {
+      return `✅ The leave request ${dateRange} for ${fullName} has been finally approved.`;
+    }
+    return `✔ The leave request ${dateRange} for ${fullName} was validated by ${roleName} (${adminName}). Awaiting Director's validation.`;
+  }
+
+  calculateDuration(start: string, end: string): number {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 0;
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 
+  viewWorkerDetails(worker: Worker): void {
+    this.selectedWorker = worker;
+    this.isModalVisible = true;
+  }
+
+  closeModal(): void {
+    this.isModalVisible = false;
+    this.selectedWorker = null;
+  }
+
   formatStatus(status: Status): string {
-    return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    switch (status) {
+      case Status.EN_ATTENTE_RH: return 'Pending HR';
+      case Status.EN_ATTENTE_ADMIN: return 'Pending Director';
+      case Status.REFUSE_RH: return 'Refused by HR';
+      case Status.REFUSE_ADMIN: return 'Refused by Director';
+      case Status.ACCEPTE: return 'Accepted';
+      default: return status;
+    }
   }
 }

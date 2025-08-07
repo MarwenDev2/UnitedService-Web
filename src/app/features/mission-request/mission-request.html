@@ -1,0 +1,22 @@
+<div class="main-container" *ngIf="isFormVisible">
+    <h2 class="page-title" *ngIf="workerName">{{ workerName }}</h2>
+    <form [formGroup]="missionForm" (ngSubmit)="onSubmit()" class="form-grid">
+      <mat-form-field appearance="fill">
+        <mat-label>Destination</mat-label>
+        <input matInput formControlName="destination" required>
+      </mat-form-field>
+  
+      <mat-form-field appearance="fill">
+        <mat-label>Date de mission</mat-label>
+        <input matInput [matDatepicker]="missionDatePicker" formControlName="missionDate" required>
+        <mat-datepicker-toggle matIconSuffix [for]="missionDatePicker"></mat-datepicker-toggle>
+        <mat-datepicker #missionDatePicker></mat-datepicker>
+      </mat-form-field>
+  
+      <div class="button-group">
+        <button mat-raised-button color="primary" [disabled]="missionForm.invalid || !isWorkerSelected" type="submit">Envoyer la demande</button>
+        <button mat-stroked-button color="warn" (click)="resetCin()">Retapper CIN</button>
+      </div>
+    </form>
+    <div class="feedback-label" *ngIf="missionForm.errors">{{ missionForm.errors | json }}</div>
+  </div>

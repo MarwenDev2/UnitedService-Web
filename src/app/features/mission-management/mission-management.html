@@ -1,0 +1,109 @@
+<div class="conge-management-container">
+  <div class="header">
+    <h1 class="title">✈️ Gestion des Ordres de Mission</h1>
+    <p class="subtitle">Tableau de bord administratif pour les ordres de mission</p>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card pending">
+      <span class="stat-label">⏳ En attente</span>
+      <span class="stat-value">{{ stats.pending }}</span>
+    </div>
+    <div class="stat-card approved">
+      <span class="stat-label">✅ Acceptées</span>
+      <span class="stat-value">{{ stats.approved }}</span>
+    </div>
+    <div class="stat-card refused">
+      <span class="stat-label">❌ Refusées</span>
+      <span class="stat-value">{{ stats.refused }}</span>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>🔎 Filtrer par statut</mat-label>
+      <mat-select [(ngModel)]="selectedStatus" (selectionChange)="applyFilter()">
+        <mat-option value="TOUS">Tous</mat-option>
+        <mat-option *ngFor="let status of statusOptions" [value]="status">
+          {{ formatStatus(status) }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Rechercher par nom</mat-label>
+        <input matInput (keyup)="applyNameFilter($event)" placeholder="Ex. Ahmed" #input>
+    </mat-form-field>
+  </div>
+
+  <div class="table-container mat-elevation-z8">
+    <table mat-table [dataSource]="dataSource" matSort>
+
+      <!-- Worker Name Column -->
+      <ng-container matColumnDef="workerName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>👤 Demandeur</th>
+        <td mat-cell *matCellDef="let row">{{ row.workerName }}</td>
+      </ng-container>
+
+      <!-- Request Date Column -->
+      <ng-container matColumnDef="requestDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>📅 Date de la demande</th>
+        <td mat-cell *matCellDef="let row">{{ row.dateRequest | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <!-- Destination Column -->
+      <ng-container matColumnDef="destination">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>📍 Destination</th>
+        <td mat-cell *matCellDef="let row">{{ row.destination }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>🚦 Statut</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-badge" [ngClass]="'status-' + row.status.toLowerCase()">
+            {{ formatStatus(row.status) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>🛠 Actions</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="action-buttons">
+            <button class="btn btn-approve" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, true)">✔</button>
+            <button class="btn btn-refuse" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, false)">✖</button>
+            <button class="btn btn-view" (click)="viewWorkerDetails(row.worker)">👁</button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" colspan="5">Aucune donnée correspondant au filtre "{{input.value}}"</td>
+      </tr>
+    </table>
+
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons></mat-paginator>
+  </div>
+</div>
+
+<app-confirmation-modal
+  [isVisible]="isConfirmationModalVisible"
+  [title]="modalConfig.title"
+  [message]="modalConfig.message"
+  [showComment]="modalConfig.showComment"
+  [confirmButtonText]="modalConfig.confirmButtonText"
+  [cancelButtonText]="modalConfig.cancelButtonText"
+  (confirmed)="onModalConfirm($event)"
+  (closed)="onModalClose()"
+></app-confirmation-modal>
+
+<app-worker-details-modal 
+  *ngIf="isWorkerModalVisible" 
+  [worker]="selectedWorker" 
+  (close)="closeWorkerModal()">
+</app-worker-details-modal>

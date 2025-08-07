@@ -1,7 +1,9 @@
 <div class="login-container">
   <div class="login-box">
+    <div class="logo-container">
+      <img src="assets/logo.png" alt="United Services Logo">
+    </div>
     <h2>Welcome Back!</h2>
-    <p>Please enter your details to sign in.</p>
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="input-group">
         <label for="email">Email</label>

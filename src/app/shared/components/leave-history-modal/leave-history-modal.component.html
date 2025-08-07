@@ -1,0 +1,86 @@
+<div class="modal-backdrop" *ngIf="isVisible" (click)="handleClose()"></div>
+
+<div class="modal-container" *ngIf="isVisible && worker">
+  <div class="modal-header">
+    <h2>Historique des Congés</h2>
+    <button class="close-btn" (click)="handleClose()">&times;</button>
+  </div>
+
+  <div class="modal-body">
+    <!-- Worker Info -->
+    <div class="worker-info">
+      <img [src]="getAvatar(worker)" alt="Worker Avatar" class="avatar">
+      <div class="worker-details">
+        <h3>{{ worker.name }}</h3>
+        <p>{{ worker.position }} - {{ worker.department }}</p>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-container">
+      <div class="stat-card total">
+        <h4>Total Jours</h4>
+        <p>{{ stats.totalDays }}</p>
+      </div>
+      <div class="stat-card approved">
+        <h4>Approuvés</h4>
+        <p>{{ stats.approved }}</p>
+      </div>
+      <div class="stat-card pending">
+        <h4>En Attente</h4>
+        <p>{{ stats.pending }}</p>
+      </div>
+      <div class="stat-card rejected">
+        <h4>Rejetés</h4>
+        <p>{{ stats.rejected }}</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-container">
+      <select [(ngModel)]="selectedYear" (ngModelChange)="applyFilters()">
+        <option [ngValue]="null">Toutes les années</option>
+        <option *ngFor="let year of years" [ngValue]="year">{{ year }}</option>
+      </select>
+      <select [(ngModel)]="selectedType" (ngModelChange)="applyFilters()">
+        <option [ngValue]="null">Tous les types</option>
+        <option *ngFor="let type of leaveTypes" [ngValue]="type">{{ type }}</option>
+      </select>
+      <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+        <option [ngValue]="null">Tous les statuts</option>
+        <option *ngFor="let status of statuses" [ngValue]="status">{{ status }}</option>
+      </select>
+    </div>
+
+    <!-- Leave History Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Période</th>
+            <th>Durée</th>
+            <th>Statut</th>
+            <th>Motif</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of filteredLeaveRequests">
+            <td>{{ req.type }}</td>
+            <td>{{ req.startDate | date:'dd/MM/yyyy' }} - {{ req.endDate | date:'dd/MM/yyyy' }}</td>
+            <td>{{ getDuration(req) }} jours</td>
+            <td [ngClass]="req.status.toLowerCase()">{{ req.status }}</td>
+            <td>{{ req.reason }}</td>
+          </tr>
+          <tr *ngIf="filteredLeaveRequests.length === 0">
+            <td colspan="5" class="no-data">Aucune demande de congé trouvée.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="export-btn" (click)="handleExportPDF()">Exporter en PDF</button>
+  </div>
+</div>

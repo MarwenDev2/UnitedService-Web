@@ -32,21 +32,41 @@
           <div class="detail-row"><i class="fas fa-calendar-alt"></i><span>Embauche: {{ worker.creationDate | date:'yyyy-MM-dd' }}</span></div>
           <div class="detail-row"><i class="fas fa-money-bill-wave"></i><span>Salaire: {{ worker.salary | number:'1.2-2' }} TND</span></div>
           <div class="status-container">
-            <span class="status-badge" [ngClass]="{'status-active': worker.status.toLowerCase() === 'actif', 'status-inactive': worker.status.toLowerCase() !== 'actif'}">
-              {{ worker.status | uppercase }}
-            </span>
+            <span class="status-badge" 
+      [ngClass]="{'status-active': worker.status.toLowerCase() === 'actif', 'status-inactive': worker.status.toLowerCase() !== 'actif', 'status-clickable': isAdmin}"
+      (click)="promptChangeStatus(worker)">
+  {{ worker.status | uppercase }}
+</span>
             <span *ngIf="worker.usedCongeDays > 0" class="status-badge status-leave">EN CONGÉ</span>
           </div>
         </div>
 
         <!-- Card Actions -->
         <div class="button-container">
-          <button class="btn history-button"><i class="fas fa-history"></i> Historique</button>
+          <button class="btn history-button" (click)="openLeaveHistory(worker)"><i class="fas fa-history"></i> Historique</button>
           <button class="btn edit-button"><i class="fas fa-pencil-alt"></i> Modifier</button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Footer Stats -->
+  <!-- Leave History Modal -->
+<app-leave-history-modal 
+  [isVisible]="isLeaveHistoryVisible" 
+  [worker]="selectedWorker" 
+  (closeModal)="closeLeaveHistory()">
+</app-leave-history-modal>
+
+<!-- Status Change Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="isConfirmationModalVisible"
+  [title]="modalConfig.title"
+  [message]="modalConfig.message"
+  [confirmButtonText]="modalConfig.confirmButtonText"
+  (confirmed)="onStatusChangeConfirm()"
+  (closed)="onStatusChangeCancel()"
+></app-confirmation-modal>
 
   <!-- Footer Stats -->
   <div class="stats-box">

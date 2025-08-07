@@ -5,10 +5,11 @@ export interface User {
     name: string;
     email: string;
     password?: string;
-    phone: string;
-    profileImagePath?: string;
+    phoneNumber: string;
+    photoUrl?: string;
     gender: string;
     dateOfBirth: string;
     address: string;
     role: Role;
-  }
+
+}

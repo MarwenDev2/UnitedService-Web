@@ -1,13 +1,16 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-import { CongeService } from '../../core/services/conge';
+import { CongeService } from '../../core/services/conge.service';
 import { UserService } from '../../core/services/user.service';
-import { Status, DemandeConge } from '../../models/conge.model';
+import { DemandeConge } from '../../models/DemandeConge.model';
+import { Status } from '../../models/Status.enum';
 import { User } from '../../models/User.model';
+import { AuthService } from '../../core/services/auth.service';
+import { AdminStatistics } from '../admin-statistics/admin-statistics';
 
 export interface Activity {
   id: number;
@@ -16,16 +19,12 @@ export interface Activity {
   time: string;
 }
 
-export interface Holiday {
-  id: number;
-  name: string;
-  date: Date;
-}
+
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, DatePipe],
+      imports: [CommonModule, RouterModule, AdminStatistics],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
@@ -41,22 +40,15 @@ export class DashboardComponent implements OnInit {
   // Recent Activities
   recentActivities: Activity[] = [];
 
-  // Upcoming Holidays
-  upcomingHolidays: Holiday[] = [
-    { id: 1, name: 'Nouvel An', date: new Date('2025-01-01') },
-    { id: 2, name: 'Fête de la Révolution', date: new Date('2025-01-14') },
-    { id: 3, name: 'Fête de l\'Indépendance', date: new Date('2025-03-20') },
-    { id: 4, name: 'Fête du Travail', date: new Date('2025-05-01') },
-    { id: 5, name: 'Fête de la République', date: new Date('2025-07-25') }
-  ];
-
   constructor(
     private congeService: CongeService,
     private userService: UserService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.userName = this.authService.currentUserValue?.role || '' ;
     this.loadStats();
     this.loadRecentActivities();
   }
@@ -137,14 +129,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  getDaysUntil(date: Date): number {
-    const today = new Date();
-    const targetDate = new Date(date);
-    today.setHours(0, 0, 0, 0);
-    targetDate.setHours(0, 0, 0, 0);
-    const diffTime = targetDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }
+
 
   getRelativeTime(date: Date): string {
     const now = new Date();

@@ -1,0 +1,25 @@
+<div class="cin-dialog-container animate-fadeIn">
+  <div class="cin-dialog-card">
+    <h2 mat-dialog-title class="dialog-title">Identification de l'Employé</h2>
+    <mat-dialog-content class="dialog-content">
+      <p class="instruction-text">Veuillez entrer le CIN de l'employé pour continuer.</p>
+      <form [formGroup]="cinForm" (ngSubmit)="onSubmit()" class="cin-form">
+        <mat-form-field appearance="outline" class="cin-input">
+          <mat-label>CIN</mat-label>
+          <input matInput formControlName="cin" required [disabled]="isLoading">
+          <mat-hint>Format : 8 caractères alphanumériques (ex. AB123456)</mat-hint>
+          <mat-error *ngIf="cinForm.get('cin')?.hasError('required')">Le CIN est requis.</mat-error>
+          <mat-error *ngIf="cinForm.get('cin')?.hasError('pattern')">Le CIN doit contenir exactement 8 caractères alphanumériques.</mat-error>
+          <mat-error *ngIf="cinForm.get('cin')?.hasError('workerNotFound')">Aucun employé trouvé avec ce CIN.</mat-error>
+        </mat-form-field>
+        <div class="spinner-container" *ngIf="isLoading">
+          <mat-progress-spinner mode="indeterminate" diameter="30"></mat-progress-spinner>
+        </div>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions class="dialog-actions">
+      <button mat-stroked-button color="warn" (click)="onCancel()" [disabled]="isLoading">Annuler</button>
+      <button mat-raised-button color="primary" [disabled]="cinForm.invalid || isLoading" (click)="onSubmit()">Valider</button>
+    </mat-dialog-actions>
+  </div>
+</div>

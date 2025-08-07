@@ -49,6 +49,8 @@
   <!-- Main Content Area -->
   <div class="main-area">
 
+    <app-admin-statistics></app-admin-statistics>
+
     <!-- Recent Activities -->
     <div class="activities-card">
       <h3><i class="fas fa-history"></i> Activités Récentes</h3>
@@ -60,25 +62,6 @@
           <div class="activity-details">
             <p>{{ activity.text }}</p>
             <span>{{ activity.time }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Upcoming Holidays -->
-    <div class="holidays-card">
-      <h3><i class="fas fa-calendar-alt"></i> Jours Fériés à Venir</h3>
-      <div class="holiday-list">
-        <div *ngFor="let holiday of upcomingHolidays" class="holiday-item">
-          <div class="holiday-date">
-            <p>{{ holiday.date | date: 'MMM' }}</p>
-            <span>{{ holiday.date | date: 'd' }}</span>
-          </div>
-          <div class="holiday-info">
-            <p>{{ holiday.name }}</p>
-            <span [class]="getDaysUntil(holiday.date) < 7 ? 'urgent' : ''">
-              {{ getDaysUntil(holiday.date) > 0 ? 'Dans ' + getDaysUntil(holiday.date) + ' jours' : 'Passé' }}
-            </span>
           </div>
         </div>
       </div>

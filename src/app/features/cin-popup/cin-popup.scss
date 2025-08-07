@@ -1,0 +1,132 @@
+.cin-dialog-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100%;
+  }
+  
+  .cin-dialog-card {
+    background-color: var(--bg-primary);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    width: 100%;
+    max-width: 500px; // Increased for a more spacious design
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  
+    @media (max-width: 600px) {
+      padding: 16px;
+      max-width: 90%;
+    }
+  }
+  
+  .dialog-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-color);
+    text-align: center;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .dialog-content {
+    padding: 0 0 20px;
+    text-align: center;
+  }
+  
+  .instruction-text {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  
+  .cin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .cin-input {
+    width: 100%;
+  
+    .mat-form-field-outline {
+      color: var(--border-color);
+      transition: all 0.3s ease;
+    }
+  
+    .mat-form-field-focused .mat-form-field-outline {
+      color: var(--accent-color);
+    }
+  
+    mat-hint {
+      font-size: 12px;
+      color: var(--text-light);
+    }
+  
+    mat-error {
+      font-size: 14px;
+      color: var(--danger-color);
+      margin-top: 4px;
+    }
+  
+    input {
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
+    }
+  }
+  
+  .spinner-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .dialog-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+  
+    button {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+  
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  
+    .mat-raised-button {
+      background-color: var(--accent-color);
+      color: var(--text-on-accent);
+  
+      &:hover:not(:disabled) {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+      }
+    }
+  
+    .mat-stroked-button {
+      border-color: var(--danger-color);
+      color: var(--danger-color);
+  
+      &:hover:not(:disabled) {
+        background-color: rgba(231, 76, 60, 0.1);
+      }
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.4s var(--transition-timing) forwards;
+  }
