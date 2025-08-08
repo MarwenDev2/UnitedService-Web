@@ -59,12 +59,16 @@ export class CongeService {
     return this.http.get<number>(`${this.apiUrl}/count/month/${month}`);
   }
   
-  setSelectedWorker(id: number) {
-     this.workerService.getWorkerById(id).subscribe({
-      next: (worker) => {
-        this.selectedWorker = worker;
-      }
-    });;
+  setSelectedWorker(worker: Worker | null) {
+    if (worker && worker.id) {
+      this.workerService.getWorkerById(worker.id).subscribe({
+        next: (foundWorker) => {
+          this.selectedWorker = foundWorker;
+        }
+      });
+    } else {
+      this.selectedWorker = undefined;
+    }
   }
 
   getSelectedWorker() {
@@ -83,5 +87,24 @@ export class CongeService {
     }
 
     return this.http.post<DemandeConge>(this.apiUrl, formData);
+  }
+
+  downloadAttachment(filename: string): void {
+    const downloadUrl = `${this.apiUrl}/download/${filename}`;
+    this.http.get(downloadUrl, { responseType: 'blob' }).subscribe(blob => {
+      const a = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      a.href = objectUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    }, error => {
+      console.error('Download error:', error);
+      // Optionally, show a notification to the user
+    });
+  }
+
+  hasPendingRequest(workerId: number): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/has-pending/${workerId}`);
   }
 }

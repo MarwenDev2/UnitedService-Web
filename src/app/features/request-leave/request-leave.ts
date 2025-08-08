@@ -13,6 +13,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { Router } from '@angular/router';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   standalone: true,
@@ -42,7 +44,8 @@ export class RequestLeave implements OnInit {
     private fb: FormBuilder,
     public dialog: MatDialog,
     private demandeService: CongeService,
-    private snackBar: MatSnackBar
+    private notificationService: NotificationService,
+    private router: Router
   ) {
     this.demandeForm = this.fb.group({
       type: [{ value: '', disabled: true }, Validators.required],
@@ -74,15 +77,15 @@ export class RequestLeave implements OnInit {
       data: {}
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      const worker = this.demandeService.getSelectedWorker();
-      if (result && worker) {
+    dialogRef.afterClosed().subscribe(worker => {
+      if (worker) {
+        this.demandeService.setSelectedWorker(worker);
         this.setWorkerLabel(worker);
         this.enableForm();
         this.isWorkerSelected = true;
       } else {
-        this.workerName = ''; // No worker name if canceled
-        this.disableForm(); // Disable form if no worker selected
+        this.workerName = '';
+        this.disableForm();
         this.isWorkerSelected = false;
       }
     });
@@ -113,22 +116,58 @@ export class RequestLeave implements OnInit {
   }
 
   onSubmit() {
-    if (this.demandeForm.valid && this.isWorkerSelected) {
+    if (!this.demandeForm.valid || !this.isWorkerSelected) {
+      this.notificationService.showWarning('Veuillez remplir tous les champs requis.', 'Unauthorized Action');
+      return;
+    }
+
+    const worker = this.demandeService.getSelectedWorker();
+    if (!worker) {
+      this.notificationService.showWarning('Erreur: Travailleur non identifié.', 'Unauthorized Action');
+      return;
+    }
+
+    const { startDate, endDate } = this.demandeForm.value;
+
+    if (new Date(endDate) < new Date(startDate)) {
+      this.notificationService.showWarning('La date de fin doit être postérieure à la date de début.', 'Unauthorized Action');
+      return;
+    }
+
+    if (new Date(startDate) < new Date(new Date().setHours(0, 0, 0, 0))) {
+        this.notificationService.showWarning('La date de début ne peut pas être dans le passé.', 'Unauthorized Action');
+        return;
+    }
+
+    const requestedDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24) + 1;
+    const remainingDays = worker.totalCongeDays - worker.usedCongeDays;
+
+    if (requestedDays > remainingDays) {
+      this.notificationService.showWarning(`Solde insuffisant. Jours restants: ${remainingDays}.`, 'Unauthorized Action');
+      return;
+    }
+
+    this.demandeService.hasPendingRequest(worker.id).subscribe(hasPending => {
+      if (hasPending) {
+        this. notificationService.showWarning('Vous avez déjà une demande de congé en attente.', 'Unauthorized Action');
+        return;
+      }
+
+      // All checks passed, proceed with submission
       const demande = this.demandeForm.value;
       const file = this.demandeForm.get('attachment')?.value;
       this.demandeService.createDemande(demande, file).subscribe({
         next: () => {
-          this.snackBar.open('✅ Demande envoyée avec succès !', 'Fermer', { duration: 3000 });
-          this.demandeForm.reset();
-          this.demandeForm.get('attachment')?.setValue(null);
+          this.notificationService.showSuccess('✅ Demande envoyée avec succès !', 'Fermer');
+          this.router.navigate(['/conges']);
         },
-        error: (err) => this.snackBar.open(`❌ ${err.error?.message || 'Une erreur est survenue.'}`, 'Fermer', { duration: 3000 })
+        error: (err) => this.notificationService.showError(`❌ ${err.error?.message || 'Une erreur est survenue.'}`, 'Fermer')
       });
-    }
+    });
   }
 
   resetCin() {
-    this.demandeService.setSelectedWorker(0);
+    this.demandeService.setSelectedWorker(null);
     this.workerName = '';
     this.disableForm();
     this.isWorkerSelected = false;

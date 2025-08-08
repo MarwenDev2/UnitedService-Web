@@ -28,7 +28,7 @@
     </mat-form-field>
 
     <div class="attachment-container">
-      <button mat-stroked-button color="accent" (click)="fileInput.click()" class="upload-button" [disabled]="!isWorkerSelected">
+      <button type="button" mat-stroked-button color="accent" (click)="fileInput.click()" class="upload-button" [disabled]="!isWorkerSelected">
         Joindre un document
       </button>
       <input type="file" #fileInput (change)="onFileChange($event)" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">

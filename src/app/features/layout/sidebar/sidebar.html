@@ -26,13 +26,13 @@
         <li>
           <a routerLink="/request-leave" routerLinkActive="active">
             <i class="fas fa-file-alt"></i>
-            <span class="text" *ngIf="!isCollapsed">Postuler un congé</span>
+            <span class="text" *ngIf="!isCollapsed">Demande de congé</span>
           </a>
         </li>
         <li>
           <a routerLink="/mission-request" [class.active]="isActive('mission-request')">
             <i class="fas fa-plus"></i>
-            <span *ngIf="!isCollapsed">Postuler une mission</span>
+            <span *ngIf="!isCollapsed">Ordre de mission</span>
           </a>
         </li>
       </ul>
@@ -40,13 +40,13 @@
     <li>
       <a routerLink="/conges" [class.active]="isActive('conges')">
         <i class="fas fa-calendar-alt"></i>
-        <span *ngIf="!isCollapsed">Demandes de congés</span>
+        <span *ngIf="!isCollapsed">Demandes de congé</span>
       </a>
     </li>
     <li>
       <a routerLink="/missions" [class.active]="isActive('missions')">
         <i class="fas fa-briefcase"></i>
-        <span *ngIf="!isCollapsed">Ordres de missions</span>
+        <span *ngIf="!isCollapsed">Ordres de mission</span>
       </a>
     </li>
     <li class="has-submenu" [class.open]="isUserSubmenuOpen" *ngIf="isAdmin || isRh">

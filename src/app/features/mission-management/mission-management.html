@@ -74,7 +74,8 @@
           <div class="action-buttons">
             <button class="btn btn-approve" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, true)">✔</button>
             <button class="btn btn-refuse" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, false)">✖</button>
-            <button class="btn btn-view" (click)="viewWorkerDetails(row.worker)">👁</button>
+            <button class="btn btn-view" (click)="viewWorkerDetails(row)">👁</button>
+            <button class="btn btn-print" *ngIf="isApproved(row.status)" (click)="generatePdf(row)">🖨</button>
           </div>
         </td>
       </ng-container>

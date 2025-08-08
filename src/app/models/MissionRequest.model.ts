@@ -1,8 +1,9 @@
 import { Decision } from "./Decision.model";
+import { Worker } from "./Worker.model";
 
 export interface MissionRequest {
     id: number;
-    workerId: number;
+    worker: Worker;
     destination: string;
     missionDate: string;
     status: string;

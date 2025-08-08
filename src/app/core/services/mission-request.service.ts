@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { MissionRequest } from '../../models/MissionRequest.model';
 import { environment } from '../../../environments/environment';
+import { Worker } from '../../models/Worker.model';
 
 @Injectable({
   providedIn: 'root'
@@ -32,8 +33,12 @@ export class MissionRequestService {
   }
 
   createMission(workerId: number, destination: string, missionDate: string): Observable<MissionRequest> {
-    const body = { workerId, destination, missionDate };
-    return this.http.post<MissionRequest>(this.apiUrl, body);
+    const params = new HttpParams()
+      .set('workerId', workerId.toString())
+      .set('destination', destination)
+      .set('missionDate', missionDate);
+
+    return this.http.post<MissionRequest>(this.apiUrl, null, { params });
   }
 
   getMissionById(id: number): Observable<MissionRequest> {

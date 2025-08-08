@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { CongeService } from '../../core/services/conge.service';
+
 import { WorkerService } from '../../core/services/worker.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -33,7 +33,7 @@ export class CinPopup {
     @Inject(MAT_DIALOG_DATA) public data: any,
     private fb: FormBuilder,
     private workerService: WorkerService,
-    private demandeCongeService: CongeService
+    
   ) {
     this.cinForm = this.fb.group({
       cin: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{8}$/)]]
@@ -42,20 +42,22 @@ export class CinPopup {
 
   onSubmit() {
     if (this.cinForm.valid) {
-      this.isLoading = true;
+            this.isLoading = true;
+      this.cinForm.get('cin')?.disable(); // Disable the form control
       const cin = this.cinForm.get('cin')?.value;
       this.workerService.getWorkerByCin(cin).subscribe({
         next: (worker) => {
           this.isLoading = false;
+          this.cinForm.get('cin')?.enable(); // Re-enable on completion
           if (worker) {
-            this.demandeCongeService.setSelectedWorker(worker.id);
-            this.dialogRef.close(true);
+            this.dialogRef.close(worker); // Pass the entire worker object back
           } else {
             this.cinForm.get('cin')?.setErrors({ workerNotFound: true });
           }
         },
         error: () => {
           this.isLoading = false;
+          this.cinForm.get('cin')?.enable(); // Re-enable on error
           this.cinForm.get('cin')?.setErrors({ workerNotFound: true });
         }
       });
@@ -63,6 +65,6 @@ export class CinPopup {
   }
 
   onCancel() {
-    this.dialogRef.close(false); // Explicitly indicate cancel
+    this.dialogRef.close(); // Close without a result
   }
 }

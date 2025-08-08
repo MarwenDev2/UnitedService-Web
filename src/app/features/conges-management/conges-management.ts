@@ -1,8 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+// Force recompilation by adding a comment.
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { WorkerDetailsModalComponent } from '../../shared/components/worker-details-modal/worker-details-modal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CongeService } from '../../core/services/conge.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DecisionService } from '../../core/services/decision.service';
@@ -17,14 +24,26 @@ import { ConfirmationModalComponent } from '../../shared/components/confirmation
 @Component({
   selector: 'app-conges-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmationModalComponent, WorkerDetailsModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmationModalComponent,
+    WorkerDetailsModalComponent,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule
+  ],
   templateUrl: './conges-management.html',
   styleUrls: ['./conges-management.scss']
 })
-export class CongesManagement implements OnInit {
+export class CongesManagement implements OnInit, AfterViewInit {
 
-  allDemandes: DemandeConge[] = [];
-  filteredDemandes$: Observable<DemandeConge[]> = of([]);
+  displayedColumns: string[] = ['workerName', 'period', 'duration', 'type', 'status', 'actions'];
+  dataSource: MatTableDataSource<DemandeConge> = new MatTableDataSource();
+  private allDemandes: DemandeConge[] = [];
   stats = { pending: 0, approved: 0, refused: 0 };
 
   // Confirmation Modal State
@@ -38,6 +57,9 @@ export class CongesManagement implements OnInit {
   };
   private activeDecision: { demande: DemandeConge; isApproved: boolean } | null = null;
   currentUser: User | null = null;
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
   selectedStatus: string = 'TOUS';
   statusOptions = Object.values(Status);
@@ -57,10 +79,41 @@ export class CongesManagement implements OnInit {
     this.loadDemandes();
   }
 
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+    this.dataSource.filterPredicate = (data: DemandeConge, filter: string) => {
+      const searchString = filter.trim().toLowerCase();
+      const workerName = data.worker?.name.toLowerCase() || '';
+      return workerName.includes(searchString);
+    };
+  }
+
+  applyFilter(event: Event) {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
+  }
+
+  canApprove(status: string): boolean {
+    if (!this.currentUser) return false;
+    const isAdmin = this.currentUser.role === Role.ADMIN;
+    const isRh = this.currentUser.role === Role.RH;
+
+    if (isAdmin && status === Status.EN_ATTENTE_ADMIN) return true;
+    if (isRh && status === Status.EN_ATTENTE_RH) return true;
+
+    return false;
+  }
+
   loadDemandes(): void {
     this.congeService.getAllDemandes().subscribe((data: DemandeConge[]) => {
       this.allDemandes = data;
       this.calculateStats(data);
+      this.dataSource.data = this.allDemandes;
       this.filterDemandes();
     });
   }
@@ -70,7 +123,7 @@ export class CongesManagement implements OnInit {
     if (this.selectedStatus !== 'TOUS') {
       filtered = this.allDemandes.filter(d => d.status === this.selectedStatus);
     }
-    this.filteredDemandes$ = of(filtered);
+    this.dataSource.data = filtered;
   }
 
   calculateStats(demandes: DemandeConge[]): void {
@@ -80,19 +133,13 @@ export class CongesManagement implements OnInit {
   }
 
   handleApproval(demande: DemandeConge, isApproved: boolean): void {
-    if (!this.currentUser) return;
-
-    const role = this.currentUser.role;
-    const isRhStep = role === Role.RH && demande.status === Status.EN_ATTENTE_RH;
-    const isAdminStep = role === Role.ADMIN && demande.status === Status.EN_ATTENTE_ADMIN;
-
-    if (!isRhStep && !isAdminStep) {
-      this.notificationService.showWarning('You cannot process this request at this stage.', 'Unauthorized Action');
-      return;
+    if (!this.canApprove(demande.status)) {
+        this.notificationService.showWarning('You cannot process this request at this stage.', 'Unauthorized Action');
+        return;
     }
 
     this.activeDecision = { demande, isApproved };
-    const isFinalStep = !isApproved || role === Role.ADMIN;
+    const isFinalStep = !isApproved || this.currentUser?.role === Role.ADMIN;
 
     this.modalConfig = {
       title: isApproved ? 'Approve Leave Request' : 'Reject Leave Request',
@@ -108,7 +155,10 @@ export class CongesManagement implements OnInit {
   }
 
   onModalConfirm(comment: string | null): void {
-    if (!this.activeDecision || !this.currentUser) return;
+    if (!this.activeDecision || !this.currentUser) {
+        this.onModalClose();
+        return;
+    }
 
     const { demande, isApproved } = this.activeDecision;
     const role = this.currentUser.role;
@@ -190,6 +240,10 @@ export class CongesManagement implements OnInit {
   closeModal(): void {
     this.isModalVisible = false;
     this.selectedWorker = null;
+  }
+
+  downloadAttachment(attachmentPath: string): void {
+    this.congeService.downloadAttachment(attachmentPath);
   }
 
   formatStatus(status: Status): string {

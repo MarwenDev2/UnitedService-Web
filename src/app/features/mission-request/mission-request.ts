@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+import { NotificationService } from '../../core/services/notification.service';
 import { MissionRequestService } from '../../core/services/mission-request.service';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,7 +42,8 @@ export class MissionRequest implements OnInit {
     public dialog: MatDialog,
     private missionService: MissionRequestService,
     private workerService: WorkerService,
-    private snackBar: MatSnackBar
+    private notificationService: NotificationService,
+    private router: Router
   ) {
     this.missionForm = this.fb.group({
       destination: [{ value: '', disabled: true }, Validators.required],
@@ -58,9 +60,17 @@ export class MissionRequest implements OnInit {
     if (!workerId) {
       this.openCinPopup();
     } else {
-      this.setWorkerLabel(workerId);
-      this.enableForm();
-      this.isWorkerSelected = true;
+      this.workerService.getWorkerById(workerId).subscribe(worker => {
+        if (worker) {
+          this.worker = worker;
+          const civilite = this.worker.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
+          this.workerName = `Demande d'ordre de mission pour ${civilite} ${this.worker.name}`;
+          this.enableForm();
+          this.isWorkerSelected = true;
+        } else {
+          this.openCinPopup();
+        }
+      });
     }
   }
 
@@ -69,16 +79,17 @@ export class MissionRequest implements OnInit {
       width: '400px'
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      const workerId = this.missionService.getSelectedWorker();
-      if (result && workerId) {
-        this.setWorkerLabel(workerId);
+    dialogRef.afterClosed().subscribe((worker: Worker) => {
+      if (worker) {
+        this.missionService.setSelectedWorker(worker.id);
+        this.worker = worker;
+        const civilite = this.worker.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
+        this.workerName = `Demande d'ordre de mission pour ${civilite} ${this.worker.name}`;
         this.enableForm();
         this.isWorkerSelected = true;
       } else {
-        this.workerName = '';
-        this.disableForm();
-        this.isWorkerSelected = false;
+        // If the popup is closed without a worker, we don't do anything
+        // This might need a different logic depending on the app's requirements
       }
     });
   }
@@ -116,14 +127,15 @@ export class MissionRequest implements OnInit {
           destination: this.missionForm.value.destination,
           missionDate: this.missionForm.value.missionDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
         };
-        this.missionService.createMission(workerId, mission.destination, mission.missionDate).subscribe({
+        this.missionService.createMission(this.worker!.id, mission.destination, mission.missionDate).subscribe({
           next: () => {
-            this.snackBar.open('✅ Demande envoyée avec succès !', 'Fermer', { duration: 3000 });
-            this.missionForm.reset();
-            this.disableForm();
-            this.isWorkerSelected = false;
+            this.notificationService.showSuccess('✅ Demande envoyée avec succès !');
+            this.router.navigate(['/missions-management']); // Redirect on success
           },
-          error: (err) => this.snackBar.open(`❌ ${err.error?.message || 'Une erreur est survenue.'}`, 'Fermer', { duration: 3000 })
+          error: (err) => {
+            this.notificationService.showError('❌ Erreur lors de l\'envoi de la demande');
+            console.error(err);
+          }
         });
       }
     }
@@ -131,10 +143,14 @@ export class MissionRequest implements OnInit {
 
   resetCin() {
     this.missionService.setSelectedWorker(0);
+    this.worker = null;
     this.workerName = '';
     this.disableForm();
     this.isWorkerSelected = false;
-    this.missionForm.reset();
+    this.missionForm.reset({
+      destination: { value: '', disabled: true },
+      missionDate: { value: '', disabled: true }
+    });
     this.openCinPopup();
   }
 }

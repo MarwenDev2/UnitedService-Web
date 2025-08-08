@@ -1,19 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ToastrService, IndividualConfig } from 'ngx-toastr';
 
-/**
- * A centralized service for displaying toast notifications.
- * This service wraps the ngx-toastr library to provide a consistent
- * and professional notification system throughout the application.
- *
- * Usage:
- * 1. Inject NotificationService into your component or service:
- *    constructor(private notificationService: NotificationService) {}
- *
- * 2. Call one of the notification methods:
- *    this.notificationService.showSuccess('Profile updated successfully!');
- *    this.notificationService.showError('Failed to load data.');
- */
 @Injectable({
   providedIn: 'root',
 })

@@ -6,7 +6,7 @@
       <form [formGroup]="cinForm" (ngSubmit)="onSubmit()" class="cin-form">
         <mat-form-field appearance="outline" class="cin-input">
           <mat-label>CIN</mat-label>
-          <input matInput formControlName="cin" required [disabled]="isLoading">
+          <input matInput formControlName="cin" required>
           <mat-hint>Format : 8 caractères alphanumériques (ex. AB123456)</mat-hint>
           <mat-error *ngIf="cinForm.get('cin')?.hasError('required')">Le CIN est requis.</mat-error>
           <mat-error *ngIf="cinForm.get('cin')?.hasError('pattern')">Le CIN doit contenir exactement 8 caractères alphanumériques.</mat-error>
@@ -18,8 +18,8 @@
       </form>
     </mat-dialog-content>
     <mat-dialog-actions class="dialog-actions">
-      <button mat-stroked-button color="warn" (click)="onCancel()" [disabled]="isLoading">Annuler</button>
-      <button mat-raised-button color="primary" [disabled]="cinForm.invalid || isLoading" (click)="onSubmit()">Valider</button>
+      <button mat-stroked-button color="warn" (click)="onCancel()">Annuler</button>
+      <button mat-raised-button color="primary" [disabled]="cinForm.invalid" (click)="onSubmit()">Valider</button>
     </mat-dialog-actions>
   </div>
 </div>
