@@ -20,20 +20,10 @@
           <small *ngIf="loginForm.get('password')?.errors?.['required']">Password is required.</small>
         </div>
       </div>
-      <div class="options">
-        <label class="remember-me">
-          <input type="checkbox" formControlName="rememberMe">
-          Remember me
-        </label>
-        <a href="#" class="forgot-password">Forgot password?</a>
-      </div>
       <button type="submit" class="login-btn" [disabled]="!loginForm.valid">Sign In</button>
       <div *ngIf="loginError" class="error-message">
         Invalid email or password. Please try again.
       </div>
     </form>
-    <div class="signup-link">
-      <p>Don't have an account? <a routerLink="/register">Sign up</a></p>
-    </div>
   </div>
 </div>

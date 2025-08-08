@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { NgZone } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, tap, switchMap, take, map, filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { User } from '../../models/User.model';
@@ -140,10 +140,11 @@ export class AuthService {
         }
       }),
       catchError(error => {
-        console.error('Login failed:', error.message);
-        this.loginErrorSubject.next(error.message || 'Unable to log in. Please check your email and password.');
-        this.logout();
-        return of(null);
+        const errorMessage = error?.error?.message || 'Invalid credentials';
+        console.error('Login failed:', errorMessage);
+        this.loginErrorSubject.next(errorMessage);
+        // Re-throw the error to be caught by the component
+        return throwError(() => new Error(errorMessage));
       })
     );
   }

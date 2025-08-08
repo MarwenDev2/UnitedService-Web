@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, ChartType, PieController, BarController, ArcElement, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
+import { map } from 'rxjs/operators';
 import { CongeService } from '../../core/services/conge.service';
 import { animate, AnimationBuilder, style } from '@angular/animations';
 import { Status } from '../../models/Status.enum';
@@ -69,52 +71,58 @@ export class AdminStatistics implements OnInit {
       this.loadStatusStats();
       this.loadTypeStats();
       this.loadMonthlyStats();
+      this.isLoading = false;
     });
   }
 
   loadStatusStats() {
-    const statuses = [Status.ACCEPTE, Status.EN_ATTENTE_RH, Status.EN_ATTENTE_ADMIN, Status.REFUSE_RH, Status.REFUSE_ADMIN];
-    const labels: string[] = [];
-    const data: number[] = [];
+    const statusMap = {
+      'Acceptées': [Status.ACCEPTE],
+      'En attente': [Status.EN_ATTENTE_RH, Status.EN_ATTENTE_ADMIN],
+      'Refusées': [Status.REFUSE_RH, Status.REFUSE_ADMIN]
+    };
 
-    statuses.forEach(status => {
-      this.congeService.countByStatus(status).subscribe(count => {
-        if (count > 0) {
-          labels.push(status === Status.ACCEPTE ? 'Acceptées' : 
-                     status === Status.REFUSE_RH || status === Status.REFUSE_ADMIN ? 'Refusées' : 'En attente');
-          data.push(count);
-          this.updateStatusChart(labels, data);
-        }
-      });
+    const labels = Object.keys(statusMap);
+    const observables = labels.map(label => {
+      const statuses = statusMap[label as keyof typeof statusMap];
+      const statusObservables = statuses.map(status => this.congeService.countByStatus(status));
+      return forkJoin(statusObservables).pipe(
+        map((counts: number[]) => counts.reduce((acc: number, count: number) => acc + count, 0))
+      );
+    });
+
+    forkJoin(observables).subscribe((data: number[]) => {
+      this.updateStatusChart(labels, data);
     });
   }
 
   loadTypeStats() {
-    const types = [TypeConge.ANNUEL, TypeConge.MALADIE, TypeConge.MATERNITE, TypeConge.SANS_SOLDE, TypeConge.AUTRE];
-    const labels: string[] = [];
-    const data: number[] = [];
+    const types = Object.values(TypeConge);
+    const observables = types.map(type => this.congeService.countByType(type));
 
-    types.forEach(type => {
-      this.congeService.countByType(type).subscribe(count => {
+    forkJoin(observables).subscribe((counts: number[]) => {
+      const labels: string[] = [];
+      const data: number[] = [];
+      counts.forEach((count, index) => {
         if (count > 0) {
-          labels.push(type);
+          labels.push(types[index]);
           data.push(count);
-          this.updateTypeChart(labels, data);
         }
       });
+      this.updateTypeChart(labels, data);
     });
   }
 
   loadMonthlyStats() {
-    const labels: string[] = ['Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
-    const data: number[] = [];
+    const currentYear = new Date().getFullYear();
+    this.monthlyChartOptions!.plugins!.title!.text = `Évolution Mensuelle ${currentYear}`;
 
-    for (let i = 1; i <= 12; i++) {
-      this.congeService.countByMonth(i).subscribe(count => {
-        data.push(count);
-        this.updateMonthlyChart(labels, data);
-      });
-    }
+    const labels = ['Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    const observables = Array.from({ length: 12 }, (_, i) => this.congeService.countByMonth(i + 1, currentYear));
+
+    forkJoin(observables).subscribe((data: number[]) => {
+      this.updateMonthlyChart(labels, data);
+    });
   }
 
   updateStatusChart(labels: string[], data: number[]) {
@@ -122,11 +130,10 @@ export class AdminStatistics implements OnInit {
       labels: labels,
       datasets: [{
         data: data,
-        backgroundColor: ['#4CAF50', '#FF9800', '#F44336'],
+        backgroundColor: ['#4CAF50', '#FFC107', '#F44336'], // Green, Amber, Red
         borderWidth: 1
       }]
     };
-    this.isLoading = false;
   }
 
   updateTypeChart(labels: string[], data: number[]) {

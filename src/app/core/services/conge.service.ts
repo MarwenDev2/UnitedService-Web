@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { DemandeConge } from '../../models/DemandeConge.model';
 import { environment } from '../../../environments/environment';
@@ -55,8 +56,8 @@ export class CongeService {
     return this.http.get<number>(`${this.apiUrl}/count/type/${type}`);
   }
 
-  countByMonth(month: number): Observable<number> {
-    return this.http.get<number>(`${this.apiUrl}/count/month/${month}`);
+  countByMonth(month: number, year: number): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/count-by-month/${month}/${year}`);
   }
   
   setSelectedWorker(worker: Worker | null) {

@@ -44,9 +44,15 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.loginForm.valid) {
       const { email, password, rememberMe } = this.loginForm.value;
-      this.authService.login({ email, password }, rememberMe).subscribe(user => {
-        if (user) {
-          this.router.navigate(['/dashboard']);
+      this.authService.login({ email, password }, rememberMe).subscribe({
+        next: (user) => {
+          if (user) {
+            this.router.navigate(['/dashboard']);
+          }
+        },
+        error: () => {
+          // Error is handled by the loginError$ subscription, but we can explicitly set it here too.
+          this.loginError = true;
         }
       });
     }

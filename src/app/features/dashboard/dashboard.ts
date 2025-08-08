@@ -24,7 +24,7 @@ export interface Activity {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-      imports: [CommonModule, RouterModule, AdminStatistics],
+  imports: [CommonModule, RouterModule, AdminStatistics],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
