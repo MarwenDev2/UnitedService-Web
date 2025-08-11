@@ -19,6 +19,7 @@ export class Sidebar implements OnInit, OnDestroy {
   isAdmin = false;
   isRh = false;
   isUserSubmenuOpen = false;
+  salaryAdvanceMenuOpen = false;
   isCollapsed = false;
   private layoutSubscription: Subscription;
   currentRoute: string = '';
@@ -30,7 +31,7 @@ export class Sidebar implements OnInit, OnDestroy {
     private authService: AuthService
   ) {
     this.layoutSubscription = this.layoutService.isCollapsed$.subscribe(
-      (collapsed: boolean) => (this.isCollapsed = collapsed)
+      isCollapsed => this.isCollapsed = isCollapsed
     );
   }
 
@@ -38,13 +39,13 @@ export class Sidebar implements OnInit, OnDestroy {
     const user = this.authService.getUser();
     this.updateUserRoles(user);
 
-    this.updateCurrentRoute();
-
-    // Subscribe to route changes
+    // Subscribe to route changes to set the current route and manage menu states
     this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
-      this.updateCurrentRoute();
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.currentRoute = event.urlAfterRedirects;
+      // Keep the salary advance menu open if on a related page
+      this.salaryAdvanceMenuOpen = this.currentRoute.includes('/demande-avance') || this.currentRoute.includes('/avances-management');
     });
   }
 
@@ -54,21 +55,18 @@ export class Sidebar implements OnInit, OnDestroy {
     this.isRh = user?.role === Role.RH;
   }
 
-  updateCurrentRoute(): void {
-    let route = this.route;
-    while (route.firstChild) {
-      route = route.firstChild;
-    }
-    this.currentRoute = route.snapshot.routeConfig?.path || '';
-  }
-
   isActive(routeSegment: string): boolean {
     return this.currentRoute.includes(routeSegment);
   }
 
-  toggleUserSubmenu(event: MouseEvent): void {
+  toggleUserSubmenu(event: Event): void {
     event.preventDefault();
     this.isUserSubmenuOpen = !this.isUserSubmenuOpen;
+  }
+
+  toggleSalaryAdvanceMenu(event: Event): void {
+    event.preventDefault();
+    this.salaryAdvanceMenuOpen = !this.salaryAdvanceMenuOpen;
   }
 
   toggleCollapse(): void {

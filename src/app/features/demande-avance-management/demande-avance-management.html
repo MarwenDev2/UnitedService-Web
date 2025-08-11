@@ -1,0 +1,108 @@
+<div class="management-container">
+  <div class="header">
+    <h1 class="title">💸 Gestion des Demandes d'Avance</h1>
+    <p class="subtitle">Tableau de bord pour les demandes d'avance sur salaire</p>
+  </div>
+
+  <div class="table-container mat-elevation-z8">
+    <table mat-table [dataSource]="dataSource" matSort>
+
+      <!-- Worker Name Column -->
+      <ng-container matColumnDef="workerName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>👤 Demandeur</th>
+        <td mat-cell *matCellDef="let row">{{ row.workerName }}</td>
+      </ng-container>
+
+      <!-- Requested Amount Column -->
+      <ng-container matColumnDef="requestedAmount">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>💰 Montant Demandé</th>
+        <td mat-cell *matCellDef="let row">{{ row.requestedAmount | currency:'TND' }}</td>
+      </ng-container>
+
+      <!-- Admin Response Amount Column -->
+      <ng-container matColumnDef="adminResponseAmount">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>💸 Montant Accordé</th>
+        <td mat-cell *matCellDef="let row">{{ row.adminResponseAmount | currency:'TND' }}</td>
+      </ng-container>
+
+      <!-- Date Request Column -->
+      <ng-container matColumnDef="dateRequest">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>📅 Date</th>
+        <td mat-cell *matCellDef="let row">{{ row.dateRequest | date: 'dd/MM/yyyy' }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>🚦 Statut</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-badge" [ngClass]="getStatusClass(row.status)">
+            {{ getStatusText(row.status) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>🛠 Actions</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="action-buttons">
+            <button class="btn-view" (click)="viewWorkerDetails(row.worker)" mat-icon-button matTooltip="Voir détails employé">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn-respond" (click)="openResponseModal(row)" *ngIf="isAdmin && row.status === 'EN_ATTENTE_ADMIN'" mat-icon-button matTooltip="Répondre à la demande">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" colspan="5">Aucune demande à afficher.</td>
+      </tr>
+    </table>
+
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons></mat-paginator>
+  </div>
+</div>
+
+<!-- Worker Details Modal -->
+<app-worker-details-modal 
+  *ngIf="isWorkerModalVisible" 
+  [worker]="selectedWorker" 
+  (close)="closeWorkerModal()">
+</app-worker-details-modal>
+
+<!-- Admin Response Modal -->
+<div class="modal fade" id="adminResponseModal" tabindex="-1" aria-labelledby="adminResponseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="adminResponseModalLabel">Répondre à la Demande</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #adminForm="ngForm" novalidate>
+        <div class="modal-body">
+          <p><strong>Employé:</strong> {{ selectedDemande?.workerName }}</p>
+          <p><strong>Montant Demandé:</strong> {{ selectedDemande?.requestedAmount | currency:'TND' }}</p>
+          <hr>
+          <div class="mb-3">
+            <label for="adminResponseAmount" class="form-label">Montant Accordé</label>
+            <input type="number" id="adminResponseAmount" class="form-control" [(ngModel)]="adminResponseAmount" name="adminResponseAmount" placeholder="TND 0.00">
+          </div>
+          <div class="mb-3">
+            <label for="adminComment" class="form-label">Commentaire (Optionnel)</label>
+            <textarea id="adminComment" class="form-control" [(ngModel)]="adminComment" name="adminComment" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" [disabled]="!adminForm.valid" (click)="onAdminSubmit('accepte')">Accepter</button>
+          <button type="button" class="btn btn-danger" [disabled]="!adminForm.valid" (click)="onAdminSubmit('refuse_admin')">Refuser</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

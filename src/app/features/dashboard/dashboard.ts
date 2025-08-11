@@ -93,7 +93,7 @@ export class DashboardComponent implements OnInit {
         id: demande.id,
         type: 'leave',
         text: this.buildNotificationMessage(demande),
-        time: this.getRelativeTime(new Date(demande.startDate))
+        time: this.getRelativeTime(new Date(demande.dateDemande))
       }));
     });
   }

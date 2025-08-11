@@ -1,0 +1,61 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header pb-0">
+          <h5 class="mb-0">Nouvelle Demande d'Avance sur Salaire</h5>
+          <p class="text-sm mb-0">Remplissez les informations ci-dessous pour soumettre une nouvelle demande.</p>
+        </div>
+        <div class="card-body p-4">
+          <form #demandeForm="ngForm" (ngSubmit)="onSubmit(demandeForm)" novalidate>
+
+            <div class="form-group mb-4">
+              <label for="cin" class="form-label">CIN de l'Employé</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                <input type="text" class="form-control" id="cin" name="cin" 
+                       [(ngModel)]="demande.cin" 
+                       (ngModelChange)="onCinChange()" 
+                       #cinInput="ngModel" 
+                       required minlength="7" maxlength="8" 
+                       [ngClass]="{ 'is-invalid': cinInput.invalid && (cinInput.dirty || cinInput.touched) }">
+              </div>
+              <div *ngIf="cinInput.invalid && (cinInput.dirty || cinInput.touched)" class="invalid-feedback d-block">
+                <div *ngIf="cinInput.errors?.['required']">Le CIN est requis.</div>
+                <div *ngIf="cinInput.errors?.['minlength'] || cinInput.errors?.['maxlength']">Le CIN doit contenir entre 7 et 8 caractères.</div>
+              </div>
+              <div *ngIf="workerName" class="text-success mt-2 animate__animated animate__fadeIn">
+                <i class="fas fa-check-circle"></i> Employé: <strong>{{ workerName }}</strong>
+              </div>
+              <div *ngIf="cinError" class="text-danger mt-2 animate__animated animate__fadeIn">
+                <i class="fas fa-exclamation-circle"></i> {{ cinError }}
+              </div>
+            </div>
+
+            <div class="form-group mb-4">
+              <label for="requestedAmount" class="form-label">Montant Demandé (TND)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
+                <input type="number" class="form-control" id="requestedAmount" name="requestedAmount" 
+                       [(ngModel)]="demande.requestedAmount" 
+                       #amountInput="ngModel" 
+                       required min="1">
+              </div>
+              <div *ngIf="amountInput.invalid && (amountInput.dirty || amountInput.touched)" class="invalid-feedback d-block">
+                <div *ngIf="amountInput.errors?.['required']">Le montant est requis.</div>
+                <div *ngIf="amountInput.errors?.['min']">Le montant doit être positif.</div>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="demandeForm.invalid || !workerId">
+                <i class="fas fa-paper-plane me-2"></i>Soumettre la Demande
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

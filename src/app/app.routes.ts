@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { Role } from './models/Role.enum';
 import { LayoutComponent } from './features/layout/layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
 
@@ -36,9 +37,21 @@ export const routes: Routes = [
         path: 'mission-request',
         loadComponent: () => import('./features/mission-request/mission-request').then(c => c.MissionRequest),
       },
-      {
+            {
         path: 'missions',
         loadComponent: () => import('./features/mission-management/mission-management').then(c => c.MissionManagementComponent),
+      },
+      {
+        path: 'demande-avance',
+        loadComponent: () => import('./features/demande-avance/demande-avance').then(m => m.DemandeAvanceComponent),
+        canActivate: [AuthGuard],
+        data: { roles: [Role.SECRETAIRE] }
+      },
+      {
+        path: 'avances-management',
+        loadComponent: () => import('./features/demande-avance-management/demande-avance-management').then(m => m.DemandeAvanceManagementComponent),
+        canActivate: [AuthGuard],
+        data: { roles: [Role.ADMIN] }
       },
       {
         path: '',

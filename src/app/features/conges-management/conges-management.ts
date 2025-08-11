@@ -1,5 +1,8 @@
 // Force recompilation by adding a comment.
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { NotificationBackendService } from '../../core/services/notification-backend.service';
+import { Notification } from '../../models/Notification.model';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -66,6 +69,8 @@ export class CongesManagement implements OnInit, AfterViewInit {
 
   isModalVisible = false;
   selectedWorker: Worker | null = null;
+
+  private notificationBackendService = inject(NotificationBackendService);
 
   constructor(
     private congeService: CongeService,
@@ -178,6 +183,8 @@ export class CongesManagement implements OnInit, AfterViewInit {
       } else {
         this.createIntermediateNotification(demande, this.currentUser!);
       }
+      
+      this.createLeaveRequestNotification(demande, isApproved ? 'APPROVED' : 'REFUSED');
     });
 
     this.onModalClose();
@@ -222,6 +229,24 @@ export class CongesManagement implements OnInit, AfterViewInit {
       return `✅ The leave request ${dateRange} for ${fullName} has been finally approved.`;
     }
     return `✔ The leave request ${dateRange} for ${fullName} was validated by ${roleName} (${adminName}). Awaiting Director's validation.`;
+  }
+
+    private createLeaveRequestNotification(demande: DemandeConge, status: string): void {
+    if (!demande.worker) return;
+
+    const verb = status.startsWith('APPROVED') ? 'approuvée' : 'refusée';
+    const message = `Votre demande de congé du ${new Date(demande.startDate).toLocaleDateString()} au ${new Date(demande.endDate).toLocaleDateString()} a été ${verb}.`;
+
+    // The model uses 'recipient', not 'user'.
+    const notification: Partial<Notification> = {
+      message,
+      recipient: demande.worker,
+      read: false,
+    };
+
+    this.notificationBackendService.createNotification(notification as Notification).subscribe({
+      error: (err: HttpErrorResponse) => console.error('Failed to create notification', err.message)
+    });
   }
 
   calculateDuration(start: string, end: string): number {

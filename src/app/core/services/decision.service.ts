@@ -7,23 +7,19 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DecisionService {
-  private baseUrl = `${environment.apiUrl}/decision`;
+  private baseUrl = `${environment.apiUrl}/api/decisions`;
 
   constructor(private http: HttpClient) {}
 
   createDecision(decision: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/add`, decision);
+    return this.http.post(this.baseUrl, decision);
   }
 
   getDecisions(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/all`);
+    return this.http.get(this.baseUrl);
   }
 
-  getDecisionsByUser(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/byUser/${id}`);
-  }
-
-  deleteDecision(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/delete/${id}`);
+  getDecisionById(id: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/${id}`);
   }
 }

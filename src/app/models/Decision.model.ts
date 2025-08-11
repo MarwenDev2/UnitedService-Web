@@ -5,5 +5,5 @@ export interface Decision {
   decisionBy: User;
   approved: boolean;
   comment: string;
-  date: string; // LocalDateTime
+  date: string;
 }

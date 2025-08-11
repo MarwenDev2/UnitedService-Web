@@ -1,4 +1,5 @@
 <nav class="navbar" [class.sidebar-collapsed]="isCollapsed">
+  
   <div class="navbar-left">
     <div class="logo">
       <img src="../../../../assets/logo.png" alt="Logo" class="logo-img">
@@ -11,9 +12,33 @@
   </div>
   
   <div class="navbar-right">
-    <div class="nav-item">
-      <i class="fas fa-bell"></i>
-      <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+    <div class="notification-container">
+      <button class="notification-btn" (click)="toggleNotifications()">
+        <i class="fas fa-bell"></i>
+        <span *ngIf="unreadCount > 0" class="notification-badge" [@pulse]="pulseState">
+          {{ unreadCount > 9 ? '9+' : unreadCount }}
+        </span>
+      </button>
+
+      <!-- Notification Popup -->
+      <div *ngIf="isPopupVisible" class="notification-popup" [@fadeInOut]>
+        <div class="notification-header">
+          <h3>Notifications</h3>
+        </div>
+        <div class="notification-list">
+          <div *ngIf="notifications.length === 0" class="notification-empty">
+            Aucune notification
+          </div>
+          <div *ngFor="let n of notifications" 
+               class="notification-card" 
+               [class.unread]="!n.read">
+            <div class="notification-message">{{ n.message }}</div>
+            <button *ngIf="!n.read" class="mark-read-btn" (click)="markAsRead(n, $event)" title="Marquer comme lu">
+              ✔
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="nav-item" (click)="toggleUserMenu()">
       <div class="user-avatar">
