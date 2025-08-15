@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,10 +24,10 @@ import { Role } from '../../models/Role.enum';
 import { Status } from '../../models/Status.enum';
 import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
 import { WorkerDetailsModalComponent } from '../../shared/components/worker-details-modal/worker-details-modal.component';
-import { forkJoin, of, Observable } from 'rxjs';
-import { switchMap, map } from 'rxjs/operators';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { NotificationBackendService } from '../../core/services/notification-backend.service';
+import { Notification } from '../../models/Notification.model';
 
 @Component({
   selector: 'app-mission-management',
@@ -80,6 +82,7 @@ export class MissionManagementComponent implements OnInit {
     private authService: AuthService,
     private decisionService: DecisionService,
     private notificationService: NotificationService,
+    private notificationBackendService: NotificationBackendService,
     public dialog: MatDialog
   ) {}
 
@@ -182,29 +185,55 @@ export class MissionManagementComponent implements OnInit {
 
   onModalConfirm(comment: any): void {
     if (!this.activeDecision || !this.currentUser) return;
-
+  
     const { mission, isApproved } = this.activeDecision;
     const role = this.currentUser.role;
     const isFinalStep = !isApproved || role === Role.ADMIN;
-
+  
     let updateAction: Observable<any>;
-
+  
     if (role === Role.RH) {
       updateAction = this.missionRequestService.updateRHStatus(mission.id, isApproved);
     } else { // Role.ADMIN
       updateAction = this.missionRequestService.finalApprove(mission.id, isApproved);
     }
-
-    updateAction.subscribe(() => {
-      if (isFinalStep) {
-        this.createDecisionAndNotify(mission, isApproved, comment, this.currentUser!);
-      } else {
-        this.createIntermediateNotification(mission, this.currentUser!);
+  
+    updateAction.pipe(
+      switchMap(() => {
+        if (!mission.worker || !mission.worker.id) {
+          console.error('Worker information is missing from the mission:', mission);
+          return throwError(() => new Error('Worker information is missing'));
+        }
+        
+        // Create a notification after successful update
+        const notification: Notification = {
+          id: 0,
+          recipient: mission.worker, // Use the worker from the mission
+          message: `La demande d'ordre de mission du ${mission.worker.name} à ${mission.destination} le ${new Date(mission.missionDate).toLocaleDateString()} a été ${isApproved ? 'approuvée' : 'refusée'}.`,
+          read: false,
+          timestamp: new Date().toISOString(),
+        };
+        
+        console.log('Creating notification for worker:', mission.worker);
+        return this.notificationBackendService.createNotification(notification).pipe(
+          catchError(error => {
+            console.error('Error creating notification:', error);
+            // Continue the stream even if notification fails
+            return of(null);
+          })
+        );
+      })
+    ).subscribe({
+      next: () => {
+        this.notificationService.showSuccess('Décision enregistrée avec succès.');
+        this.loadMissions();
+        this.isConfirmationModalVisible = false;
+      },
+      error: (err) => {
+        this.notificationService.showError("Erreur lors de l'enregistrement de la décision.");
+        console.error(err);
       }
-      this.loadMissions(); // Refresh data
     });
-
-    this.onModalClose();
   }
 
   onModalClose(): void {

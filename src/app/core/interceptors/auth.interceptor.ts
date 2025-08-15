@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
@@ -11,41 +11,32 @@ export class AuthInterceptor implements HttpInterceptor {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    console.log('Intercepting request to:', request.url);
-
-    // Skip auth header for login endpoint
-    if (request.url.includes('/api/auth/login')) {
-        return next.handle(request);
-    }
-
-    const token = localStorage.getItem('united_auth_token') || sessionStorage.getItem('united_auth_token');
+  intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const token = localStorage.getItem('auth_token');
+    console.log('Auth interceptor - adding token to request:', {
+      url: request.url,
+      hasToken: !!token,
+      method: request.method
+    });
+  
     if (token) {
-        console.log('Adding auth token to request:', request.url);
-        request = request.clone({
-            setHeaders: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-    } else {
-        console.log('No token found for request:', request.url);
+      request = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
     }
-
+  
     return next.handle(request).pipe(
-        tap({
-            next: (event) => {
-                if (event instanceof HttpResponse) {
-                    console.log('Response received:', event.url, event.status, event.body);
-                }
-            },
-            error: (err) => {
-                console.error('HTTP error for', request.url, ':', err);
-                if (err instanceof HttpErrorResponse && err.status === 401) {
-                    this.authService.logout();
-                    this.router.navigate(['/login']);
-                }
-            }
-        })
+      catchError((error: HttpErrorResponse) => {
+        console.error('HTTP error in interceptor:', {
+          url: request.url,
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error
+        });
+        return throwError(() => error);
+      })
     );
-}
+  }
 }

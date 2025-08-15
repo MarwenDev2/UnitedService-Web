@@ -38,7 +38,7 @@
         <li class="nav-item" *ngIf="isSecretaire">
           <a class="nav-link" routerLink="/demande-avance" routerLinkActive="active">
             <i class="fa fa-money-bill-wave text-dark"></i>
-            <span class="sidenav-normal"> Demande d'Avance </span>
+            <span *ngIf="!isCollapsed"> Demande d'Avance </span>
           </a>
         </li>
       </ul>
@@ -52,7 +52,7 @@
     <li class="nav-item">
       <a class="nav-link" routerLink="/avances-management" routerLinkActive="active">
         <i class="fa fa-money-bill-wave text"></i>
-        <span class="sidenav-normal"> Avances sur Salaires </span>
+        <span *ngIf="!isCollapsed"> Avances sur Salaires </span>
       </a>
     </li>
     <li>

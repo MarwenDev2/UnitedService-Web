@@ -46,4 +46,22 @@ export class WorkerService {
   deleteWorker(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+
+  uploadRelatedFiles(id: number, files: File[]): Observable<Worker> {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('files', file);
+    });
+    return this.http.post<Worker>(`${this.API_URL}/${id}/related-files`, formData);
+  }
+
+  getRelatedFiles(id: number): Observable<string> {
+    return this.http.get(`${this.API_URL}/${id}/related-files`, { responseType: 'text' });
+  }
+
+  downloadFile(fileName: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/api/workers/photo/${fileName}`, {
+      responseType: 'blob'
+    });
+  }
 }

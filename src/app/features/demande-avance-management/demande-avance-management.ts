@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { DemandeAvance } from '../../models/demande-avance.model';
 import { DemandeAvanceService } from '../../core/services/demande-avance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { Notification } from '../../models/Notification.model';
 import { AuthService } from '../../core/services/auth.service';
 import { Role } from '../../models/Role.enum';
 import { CommonModule } from '@angular/common';
@@ -16,6 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { WorkerDetailsModalComponent } from '../../shared/components/worker-details-modal/worker-details-modal.component';
 import { Worker } from '../../models/Worker.model';
+import { NotificationBackendService } from '../../core/services/notification-backend.service';
 
 declare var bootstrap: any; // To interact with Bootstrap's JS
 
@@ -45,6 +47,7 @@ export class DemandeAvanceManagementComponent implements OnInit, AfterViewInit {
   adminResponse = { amount: 0, comment: '' };
   private adminModal: any;
   isAdmin = false;
+  isRH = false;
   isLoading = true;
 
   isWorkerModalVisible = false;
@@ -60,11 +63,13 @@ export class DemandeAvanceManagementComponent implements OnInit, AfterViewInit {
   constructor(
     private demandeAvanceService: DemandeAvanceService,
     private notificationService: NotificationService,
+    private notificationBackendService: NotificationBackendService,
     private authService: AuthService,
     private workerService: WorkerService
   ) {
     const user = this.authService.getUser();
     this.isAdmin = user?.role === Role.ADMIN;
+    this.isRH = user?.role === Role.RH;
   }
 
   ngOnInit(): void {
@@ -139,13 +144,47 @@ export class DemandeAvanceManagementComponent implements OnInit, AfterViewInit {
     if (!this.selectedDemande || !this.adminForm.valid) {
       return;
     }
-
+  
     const responseAmount = (status === 'accepte' && this.adminResponseAmount) ? this.adminResponseAmount : 0;
-
+    const workerId = this.selectedDemande.workerId; // Get workerId from the selectedDemande
+  
     this.demandeAvanceService.updateAdminResponse(
       this.selectedDemande.id,
       responseAmount,
       this.adminComment
+    ).pipe(
+      switchMap(() => {
+        if (!workerId) {
+          console.error('Worker ID is not available');
+          return of(null);
+        }
+        
+        // Create notification matching the Notification interface
+        const notification = {
+          id: 0, // Will be set by the backend
+          recipient: { 
+            id: workerId,
+            name: this.selectedDemande?.workerName || 'Utilisateur',
+            // Required Worker properties with defaults
+            cin: '',
+            department: '',
+            position: '',
+            email: '',
+            phone: '',
+            address: '',
+            hiringDate: new Date().toISOString(),
+            salary: 0,
+            status: 'active',
+            role: 'worker',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          } as any, // Using type assertion since we're providing required fields
+          message: `La demande d'avance du ${this.selectedDemande?.workerName} a été ${status === 'accepte' ? 'approuvée' : 'refusée'}.`,
+          read: false,
+          timestamp: new Date().toISOString()
+        };
+        return this.notificationBackendService.createNotification(notification);
+      })
     ).subscribe({
       next: () => {
         this.notificationService.showSuccess('Réponse enregistrée avec succès.');

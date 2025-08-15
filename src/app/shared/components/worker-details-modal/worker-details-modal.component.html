@@ -35,7 +35,7 @@
           <i class="fas fa-calendar-alt"></i>
           <span>Embauché le {{ worker.creationDate | date: 'longDate' }}</span>
         </div>
-        <div class="detail-item detail-item-full">
+        <div *ngIf="!isSecretaire" class="detail-item detail-item-full">
           <i class="fas fa-money-bill-wave"></i>
           <span>{{ worker.salary | number:'1.2-2' }} TND</span>
         </div>

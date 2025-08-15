@@ -73,9 +73,17 @@
 
         <div class="form-group">
           <label for="dateOfBirth">Date de naissance</label>
-          <input id="dateOfBirth" type="date" formControlName="dateOfBirth">
-          <div *ngIf="workerForm.get('dateOfBirth')?.invalid && workerForm.get('dateOfBirth')?.touched" class="error-message">
+          <input id="dateOfBirth" 
+                 type="date" 
+                 formControlName="dateOfBirth"
+                 [max]="maxDate | date:'yyyy-MM-dd'"
+                 class="form-control"
+                 [ngClass]="{'is-invalid': workerForm.get('dateOfBirth')?.invalid && workerForm.get('dateOfBirth')?.touched}">
+          <div *ngIf="workerForm.get('dateOfBirth')?.errors?.['required'] && workerForm.get('dateOfBirth')?.touched" class="error-message">
             La date de naissance est requise.
+          </div>
+          <div *ngIf="workerForm.get('dateOfBirth')?.errors?.['invalidAge']" class="error-message">
+            {{ workerForm.get('dateOfBirth')?.errors?.['invalidAge'] }}
           </div>
         </div>
 
@@ -89,9 +97,91 @@
 
         <div class="form-group">
           <label for="profileImage">Photo de profil</label>
-          <input id="profileImage" type="file" (change)="onFileSelected($event)" accept="image/*">
-          <div class="image-preview" *ngIf="imagePreview">
-            <img [src]="imagePreview" alt="Aperçu de l'image">
+          <div class="file-upload-container">
+            <label class="file-upload-label" [class.has-file]="selectedFile">
+              <span *ngIf="!selectedFile; else fileSelected">
+                <i class="fas fa-upload"></i> Choisir une photo de profil
+              </span>
+              <ng-template #fileSelected>
+                <i class="fas fa-check-circle"></i> {{ selectedFile?.name }}
+              </ng-template>
+              <input id="profileImage" type="file" 
+                     (change)="onFileSelected($event)" 
+                     accept="image/jpeg,image/png"
+                     class="file-input">
+            </label>
+            <div class="file-requirements">
+              <small>Formats acceptés: JPG, PNG (max 5 Mo)</small>
+            </div>
+            <div class="image-preview" *ngIf="imagePreview">
+              <img [src]="imagePreview" alt="Aperçu de l'image">
+              <button type="button" class="remove-image" (click)="selectedFile = null; imagePreview = null" title="Supprimer la photo">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="relatedFiles">Fichiers liés (CV, contrats, etc.)</label>
+          <div class="file-upload-container" 
+               (dragover)="onDragOver($event)" 
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)">
+            <label class="file-upload-label" [class.has-files]="filePreviews.length > 0" [class.dragover]="isDraggingOver">
+              <i class="fas fa-cloud-upload-alt upload-icon" [class.dragging]="isDraggingOver"></i>
+              <span *ngIf="filePreviews.length === 0">
+                Glissez-déposez des fichiers ici ou <span class="text-primary">parcourir</span>
+              </span>
+              <span *ngIf="filePreviews.length > 0">
+                Ajouter d'autres fichiers
+              </span>
+              <input id="relatedFiles" type="file" 
+                     (change)="onRelatedFilesSelected($event)" 
+                     [accept]="getFileTypesForDisplay()"
+                     multiple
+                     class="file-input">
+            </label>
+            <div class="file-requirements" *ngIf="filePreviews.length === 0">
+              <small>Formats acceptés: {{ getFileTypesForDisplay() }} (max 5 Mo par fichier)</small>
+            </div>
+            <div class="selected-files" *ngIf="filePreviews.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="mb-0">Fichiers sélectionnés ({{getValidFilesCount()}}/{{filePreviews.length}})</h4>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="clearAllFiles()" [disabled]="filePreviews.length === 0">
+                <i class="fas fa-trash-alt me-1"></i> Tout supprimer
+              </button>
+            </div>
+            <div class="file-list">
+              <div *ngFor="let file of filePreviews; let i = index" class="file-item" [class.invalid]="file.error">
+                <div class="file-icon">
+                  <i [class]="getFileIcon(file.name)"></i>
+                </div>
+                <div class="file-info">
+                  <span class="file-name" [title]="file.name">{{file.name}}</span>
+                  <div class="file-details">
+                    <span class="file-size">{{file.size | fileSize}}</span>
+                    <span class="file-status" [class.text-success]="!file.error" [class.text-danger]="file.error">
+                      <i *ngIf="!file.error" class="fas fa-check-circle"></i>
+                      <span *ngIf="file.error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{file.error}}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <button type="button" class="remove-file" (click)="removeFile(i)" title="Supprimer">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="upload-summary mt-2" *ngIf="hasInvalidFiles()">
+              <div class="alert alert-warning py-1 mb-0">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Certains fichiers ne sont pas valides. Veuillez corriger ou supprimer les fichiers en erreur avant de continuer.
+              </div>
+            </div>
+            </div>
           </div>
         </div>
       </div>

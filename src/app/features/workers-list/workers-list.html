@@ -44,13 +44,31 @@
         <!-- Card Actions -->
         <div class="button-container">
           <button class="btn history-button" (click)="openLeaveHistory(worker)"><i class="fas fa-history"></i> Historique</button>
-          <button class="btn edit-button"><i class="fas fa-pencil-alt"></i> Modifier</button>
+          <button *ngIf="isRH" class="btn edit-button"><i class="fas fa-pencil-alt"></i> Modifier</button>
+          <div class="files-dropdown" *ngIf="isAdmin || isRH">
+            <button class="btn files-button" (click)="$event.stopPropagation(); loadWorkerFiles(worker.id)">
+              <i class="fas fa-paperclip"></i> Fichiers
+              <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="files-dropdown-content" *ngIf="hasFiles(worker.id) || loadingFiles.get(worker.id)">
+              <div class="files-loading" *ngIf="loadingFiles.get(worker.id)">
+                <i class="fas fa-spinner fa-spin"></i> Chargement...
+              </div>
+              <div class="file-item" *ngFor="let file of workerFiles.get(worker.id); let i = index">
+                <a href="#" (click)="$event.preventDefault(); downloadFile(worker.id, file)" title="Télécharger {{file}}">
+                  <i class="far fa-file"></i> {{ file }}
+                </a>
+              </div>
+            </div>
+          </div>
+          <button class="btn delete-button" (click)="$event.stopPropagation(); promptDeleteWorker(worker)" *ngIf="isRH">
+            <i class="fas fa-trash"></i> Supprimer
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Footer Stats -->
   <!-- Leave History Modal -->
 <app-leave-history-modal 
   [isVisible]="isLeaveHistoryVisible" 
@@ -64,7 +82,7 @@
   [title]="modalConfig.title"
   [message]="modalConfig.message"
   [confirmButtonText]="modalConfig.confirmButtonText"
-  (confirmed)="onStatusChangeConfirm()"
+  (confirmed)="workerToDelete ? onDeleteConfirm() : onStatusChangeConfirm()"
   (closed)="onStatusChangeCancel()"
 ></app-confirmation-modal>
 

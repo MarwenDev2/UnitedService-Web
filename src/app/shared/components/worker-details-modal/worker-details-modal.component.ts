@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { Worker } from '../../../models/Worker.model';
 import { WorkerService } from '../../../core/services/worker.service';
+import { Role } from '../../../models/Role.enum';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-worker-details-modal',
@@ -16,6 +18,11 @@ export class WorkerDetailsModalComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();
     private workerService: WorkerService = inject(WorkerService);
   photoUrl: string | null = null;
+  isSecretaire = false;
+  constructor(private authService: AuthService,){
+    const user = this.authService.getUser();
+    this.isSecretaire = user?.role === Role.SECRETAIRE;
+  }
   closeModal(): void {
     this.close.emit();
   }

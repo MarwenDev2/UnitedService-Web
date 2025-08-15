@@ -150,7 +150,9 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     gap: 0.5rem;
-    justify-content: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    position: relative;
 
     .btn {
       border: none;
@@ -183,6 +185,27 @@
         color: var(--text-on-accent);
         &:hover { background-color: var(--accent-hover); }
       }
+
+      &.delete-button {
+        background-color: #dc3545;
+        color: white;
+        &:hover { 
+          background-color: #c82333;
+          transform: scale(1.05);
+        }
+      }
+
+      &.files-button {
+        background-color: #6c757d;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        &:hover { 
+          background-color: #5a6268;
+          transform: scale(1.05);
+        }
+      }
     }
   }
 }
@@ -201,5 +224,61 @@
     font-size: 1.2rem;
     font-weight: 500;
     color: var(--text-secondary);
+  }
+
+  /* Files Dropdown Styles */
+  .files-dropdown {
+    position: relative;
+    display: inline-block;
+
+    &-content {
+      position: absolute;
+      background-color: var(--bg-secondary);
+      min-width: 200px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      z-index: 1;
+      border-radius: 8px;
+      padding: 0.5rem 0;
+      margin-top: 0.25rem;
+      border: 1px solid var(--border-color);
+      max-height: 300px;
+      overflow-y: auto;
+
+      .files-loading {
+        padding: 0.5rem 1rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .file-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &:hover {
+          background-color: var(--bg-primary);
+        }
+
+        a {
+          color: var(--text-primary);
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          width: 100%;
+          height: 100%;
+
+          &:hover {
+            color: var(--accent-color);
+          }
+        }
+      }
+    }
   }
 }
