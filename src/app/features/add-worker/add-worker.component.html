@@ -1,5 +1,9 @@
 <div class="add-worker-container">
-  <h2>Ajouter un nouveau salarié</h2>
+  <h2>{{ isEditMode ? 'Modifier un salarié' : 'Ajouter un nouveau salarié' }}</h2>
+  <div class="edit-mode-indicator" *ngIf="isEditMode">
+    <i class="fas fa-edit"></i>
+    <span>Vous êtes en mode édition pour {{ originalWorker?.name }}</span>
+  </div>
   <form [formGroup]="workerForm" (ngSubmit)="onSubmit()">
     <div class="form-grid">
       <!-- Left Column -->
@@ -189,7 +193,9 @@
 
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" [routerLink]="['/workers']">Annuler</button>
-      <button type="submit" class="btn btn-primary" [disabled]="workerForm.invalid">Ajouter</button>
+      <button type="submit" class="btn btn-primary" [disabled]="workerForm.invalid">
+        {{ isEditMode ? 'Mettre à jour' : 'Ajouter' }}
+      </button>
     </div>
   </form>
 </div>

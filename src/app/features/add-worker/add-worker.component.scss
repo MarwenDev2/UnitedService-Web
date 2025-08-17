@@ -12,6 +12,28 @@
     color: #333;
   }
 
+  // In add-worker.component.scss, add these styles
+.edit-mode-indicator {
+  background-color: #e9f5ff;
+  border-left: 4px solid #007bff;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  
+  i {
+    color: #007bff;
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+  }
+  
+  span {
+    font-weight: 500;
+    color: #0056b3;
+  }
+}
+
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

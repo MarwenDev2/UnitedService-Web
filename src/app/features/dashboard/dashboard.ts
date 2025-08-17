@@ -5,12 +5,13 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import { CongeService } from '../../core/services/conge.service';
-import { UserService } from '../../core/services/user.service';
+import { WorkerService } from '../../core/services/worker.service';
 import { DemandeConge } from '../../models/DemandeConge.model';
 import { Status } from '../../models/Status.enum';
 import { User } from '../../models/User.model';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminStatistics } from '../admin-statistics/admin-statistics';
+import { Worker } from '../../models/Worker.model';
 
 export interface Activity {
   id: number;
@@ -42,7 +43,7 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private congeService: CongeService,
-    private userService: UserService,
+    private workerService: WorkerService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -64,7 +65,7 @@ export class DashboardComponent implements OnInit {
       catchError(() => of(0))
     );
 
-    const users$ = this.userService.getUsers().pipe(map((users: User[]) => users.length), catchError(() => of(0)));
+    const users$ = this.workerService.getAllWorkers().pipe(map((users: Worker[]) => users.length), catchError(() => of(0)));
 
     forkJoin({
       pending: pending$,

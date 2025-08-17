@@ -11,6 +11,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { Role } from '../../models/Role.enum';
 import { environment } from '../../../environments/environment';
 import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-workers-list',
@@ -25,6 +26,7 @@ export class WorkersListComponent implements OnInit {
   private workerService = inject(WorkerService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private router = inject(Router);
 
   // User Role
   isRH = false;
@@ -55,6 +57,11 @@ export class WorkersListComponent implements OnInit {
     this.isAdmin = this.authService.currentUserValue?.role === Role.ADMIN;
     this.loadInitialData();
     this.setupFiltering();
+  }
+
+  // In workers-list.ts, update the edit button click handler
+  editWorker(worker: Worker): void {
+    this.router.navigate(['/add-worker', worker.id]);
   }
 
   private loadInitialData(): void {

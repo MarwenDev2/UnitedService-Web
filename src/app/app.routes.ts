@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Role } from './models/Role.enum';
 import { LayoutComponent } from './features/layout/layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
+import { CanDeactivateGuard } from './core/guards/can-deactivate.guard';
 
 export const routes: Routes = [
   {
@@ -28,6 +29,14 @@ export const routes: Routes = [
       {
         path: 'add-worker',
         loadComponent: () => import('./features/add-worker/add-worker.component').then(c => c.AddWorkerComponent),
+        canActivate: [AuthGuard],
+        canDeactivate: [CanDeactivateGuard],
+      },
+      {
+        path: 'add-worker/:id',
+        loadComponent: () => import('./features/add-worker/add-worker.component').then(c => c.AddWorkerComponent),
+        canActivate: [AuthGuard],
+        canDeactivate: [CanDeactivateGuard],
       },
       {
         path: 'request-leave',

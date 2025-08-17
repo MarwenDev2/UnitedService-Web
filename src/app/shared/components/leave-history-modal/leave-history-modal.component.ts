@@ -37,7 +37,7 @@ export class LeaveHistoryModalComponent implements OnInit, OnChanges {
 
   selectedYear: number | null = null;
   selectedType: TypeConge | null = null;
-  selectedStatus: Status | null = Status.ACCEPTE;
+  selectedStatus: Status | null = null;
 
   // Stats
   stats = {

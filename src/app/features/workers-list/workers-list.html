@@ -44,7 +44,10 @@
         <!-- Card Actions -->
         <div class="button-container">
           <button class="btn history-button" (click)="openLeaveHistory(worker)"><i class="fas fa-history"></i> Historique</button>
-          <button *ngIf="isRH" class="btn edit-button"><i class="fas fa-pencil-alt"></i> Modifier</button>
+          <!-- Change the edit button in workers-list.html -->
+          <button *ngIf="isRH" class="btn edit-button" (click)="editWorker(worker)">
+            <i class="fas fa-pencil-alt"></i> Modifier
+          </button>
           <div class="files-dropdown" *ngIf="isAdmin || isRH">
             <button class="btn files-button" (click)="$event.stopPropagation(); loadWorkerFiles(worker.id)">
               <i class="fas fa-paperclip"></i> Fichiers

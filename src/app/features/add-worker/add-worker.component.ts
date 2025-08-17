@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, of, switchMap } from 'rxjs';
 import { WorkerService } from '../../core/services/worker.service';
 import { Worker } from '../../models/Worker.model';
 import { NotificationService } from '../../core/services/notification.service';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
+import { environment } from '../../../environments/environment';
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -85,6 +86,10 @@ export class AddWorkerComponent implements OnInit {
   isDraggingOver = false;
   maxDate: string = '';
   
+  isEditMode = false;
+  workerId: number | null = null;
+  originalWorker: Worker | null = null;
+
   // Constants for template
   readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   readonly ALLOWED_FILE_TYPES = [
@@ -105,6 +110,7 @@ export class AddWorkerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    
     // Set up the form
     this.workerForm = this.fb.group({
       name: ['', Validators.required],
@@ -123,6 +129,26 @@ export class AddWorkerComponent implements OnInit {
       totalCongeDays: [30, [Validators.required, Validators.min(0)]],
     });
     
+    // Check if we're in edit mode
+    this.route.paramMap.pipe(
+      switchMap(params => {
+        const id = params.get('id');
+        if (id) {
+          this.isEditMode = true;
+          this.workerId = +id;
+          return this.workerService.getWorkerById(this.workerId);
+        }
+        return of(null);
+      })
+    ).subscribe(worker => {
+      if (worker) {
+        this.originalWorker = worker;
+        this.initializeFormWithWorkerData(worker);
+      } else {
+        this.initializeEmptyForm();
+      }
+    });
+    
     // Set max date for date picker (14 years ago from today)
     const today = new Date();
     const maxDateValue = new Date();
@@ -135,6 +161,13 @@ export class AddWorkerComponent implements OnInit {
     });
   }
 
+  canDeactivate(): boolean {
+    if (this.workerForm.pristine) {
+      return true;
+    }
+    return confirm('Voulez-vous vraiment quitter sans enregistrer les modifications?');
+  }
+  
   ageValidator(minAge: number): (control: AbstractControl) => ValidationErrors | null {
     return (control: AbstractControl): ValidationErrors | null => {
       if (!control.value) {
@@ -350,7 +383,156 @@ export class AddWorkerComponent implements OnInit {
     return [...new Set(types)].join(', ');
   }
 
+  private initializeEmptyForm(): void {
+    this.workerForm = createWorkerForm(this.fb);
+  }
+
+  private initializeFormWithWorkerData(worker: Worker): void {
+    this.workerForm = createWorkerForm(this.fb);
+    this.workerForm.patchValue({
+      name: worker.name,
+      cin: worker.cin,
+      department: worker.department,
+      position: worker.position,
+      phone: worker.phone,
+      email: worker.email,
+      salary: worker.salary,
+      gender: worker.gender,
+      dateOfBirth: worker.dateOfBirth,
+      address: worker.address,
+      totalCongeDays: worker.totalCongeDays
+    });
+
+    // Load profile photo if exists
+    if (worker.profileImagePath) {
+      this.workerService.getWorkerPhotoUrl(worker.id).subscribe(url => {
+        this.imagePreview = `${environment.apiUrl}${url}`;
+      });
+    }
+
+    // Load related files if exist
+    if (worker.relatedFilesPath) {
+      this.workerService.getRelatedFiles(worker.id).subscribe(files => {
+        if (files && files.trim() !== '') {
+          this.filePreviews = files.split(';').map(file => ({
+            name: file,
+            size: 0, // Size unknown without additional API call
+            type: this.getFileTypeFromName(file),
+            progress: 100
+          }));
+        }
+      });
+    }
+  }
+
+  private getFileTypeFromName(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase() || '';
+    switch (extension) {
+      case 'pdf': return 'application/pdf';
+      case 'doc': return 'application/msword';
+      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'txt': return 'text/plain';
+      default: return 'application/octet-stream';
+    }
+  }
+
+  
   onSubmit(): void {
+    if (this.workerForm.invalid) {
+      this.workerForm.markAllAsTouched();
+      this.notificationService.showError('Veuillez remplir tous les champs obligatoires correctement.');
+      return;
+    }
+
+    const formValue = this.workerForm.value;
+    const workerData: Partial<Worker> = {
+      ...formValue,
+      status: this.originalWorker?.status || 'actif',
+      creationDate: this.originalWorker?.creationDate || new Date().toISOString().split('T')[0],
+      usedCongeDays: this.originalWorker?.usedCongeDays || 0,
+      profileImagePath: this.originalWorker?.profileImagePath || '',
+      relatedFilesPath: this.originalWorker?.relatedFilesPath || ''
+    };
+
+    if (this.isEditMode && this.workerId) {
+      this.updateWorker(this.workerId, workerData);
+    } else {
+      this.createWorker(workerData);
+    }
+  }
+
+  private createWorker(workerData: Partial<Worker>): void {
+    this.workerService.createWorker(workerData as Worker).subscribe({
+      next: (createdWorker: Worker) => {
+        this.handleFileUploads(createdWorker.id);
+      },
+      error: (err: any) => {
+        console.error('Error creating worker', err);
+        this.notificationService.showError('Erreur lors de la création de l\'employé.');
+      }
+    });
+  }
+
+  private updateWorker(id: number, workerData: Partial<Worker>): void {
+    this.workerService.updateWorker(id, workerData as Worker).subscribe({
+      next: (updatedWorker: Worker) => {
+        this.handleFileUploads(updatedWorker.id);
+      },
+      error: (err: any) => {
+        console.error('Error updating worker', err);
+        this.notificationService.showError('Erreur lors de la mise à jour de l\'employé.');
+      }
+    });
+  }
+
+  private handleFileUploads(workerId: number): void {
+    const uploads: Observable<any>[] = [];
+    
+    // Upload profile photo if selected
+    if (this.selectedFile) {
+      uploads.push(
+        this.workerService.uploadWorkerPhoto(workerId, this.selectedFile)
+      );
+    }
+    
+    // Upload related files if any
+    if (this.selectedRelatedFiles.length > 0) {
+      uploads.push(
+        this.workerService.uploadRelatedFiles(workerId, this.selectedRelatedFiles)
+      );
+    }
+    
+    // Wait for all uploads to complete
+    if (uploads.length > 0) {
+      Promise.all(uploads.map(upload => upload.toPromise()))
+        .then(() => {
+          const message = this.isEditMode 
+            ? 'Employé mis à jour avec succès!' 
+            : 'Employé et fichiers ajoutés avec succès!';
+          this.notificationService.showSuccess(message);
+          this.router.navigate(['/workers']);
+        })
+        .catch((err: any) => {
+          console.error('Error uploading files', err);
+          const message = this.isEditMode
+            ? 'Employé mis à jour, mais erreur lors du téléchargement des fichiers.'
+            : 'Erreur lors du téléchargement des fichiers, mais l\'employé a été créé.';
+          this.notificationService.showError(message);
+          this.router.navigate(['/workers']);
+        });
+    } else {
+      const message = this.isEditMode 
+        ? 'Employé mis à jour avec succès!' 
+        : 'Employé ajouté avec succès!';
+      this.notificationService.showSuccess(message);
+      this.router.navigate(['/workers']);
+    }
+  }
+
+  onSubmit1(): void {
     if (this.workerForm.invalid) {
       this.workerForm.markAllAsTouched();
       this.notificationService.showError('Veuillez remplir tous les champs obligatoires correctement.');
