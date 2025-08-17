@@ -1,4 +1,3 @@
-// Force recompilation by adding a comment.
 import { Component, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationBackendService } from '../../core/services/notification-backend.service';

@@ -18,5 +18,6 @@ export interface Worker {
   usedCongeDays: number;
   profileImagePath?: string;
   relatedFilesPath?: string;
+  lastCongeCreditUpdate?: string;
   demandes?: DemandeConge[];
 }

@@ -108,4 +108,11 @@ export class CongeService {
   hasPendingRequest(workerId: number): Observable<boolean> {
     return this.http.get<boolean>(`${this.apiUrl}/has-pending/${workerId}`);
   }
+
+  checkEligibility(workerId: number, startDate: string, endDate: string): Observable<string> {
+    return this.http.get(`${this.apiUrl}/check-eligibility/${workerId}`, {
+      params: { startDate, endDate },
+      responseType: 'text'
+    });
+  }
 }

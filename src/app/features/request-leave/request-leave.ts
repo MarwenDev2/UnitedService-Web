@@ -15,6 +15,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
+import { Status } from '../../models/Status.enum';
 
 @Component({
   standalone: true,
@@ -117,54 +118,54 @@ export class RequestLeave implements OnInit {
 
   onSubmit() {
     if (!this.demandeForm.valid || !this.isWorkerSelected) {
-      this.notificationService.showWarning('Veuillez remplir tous les champs requis.', 'Unauthorized Action');
+      this.notificationService.showWarning('Veuillez remplir tous les champs requis.', 'Action non autorisée');
       return;
     }
-
+  
     const worker = this.demandeService.getSelectedWorker();
     if (!worker) {
-      this.notificationService.showWarning('Erreur: Travailleur non identifié.', 'Unauthorized Action');
+      this.notificationService.showWarning('Erreur: Travailleur non identifié.', 'Action non autorisée');
       return;
     }
-
+  
     const { startDate, endDate } = this.demandeForm.value;
-
+  
     if (new Date(endDate) < new Date(startDate)) {
-      this.notificationService.showWarning('La date de fin doit être postérieure à la date de début.', 'Unauthorized Action');
+      this.notificationService.showWarning('La date de fin doit être postérieure à la date de début.', 'Action non autorisée');
       return;
     }
-
+  
     if (new Date(startDate) < new Date(new Date().setHours(0, 0, 0, 0))) {
-        this.notificationService.showWarning('La date de début ne peut pas être dans le passé.', 'Unauthorized Action');
-        return;
-    }
-
-    const requestedDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24) + 1;
-    const remainingDays = worker.totalCongeDays - worker.usedCongeDays;
-
-    if (requestedDays > remainingDays) {
-      this.notificationService.showWarning(`Solde insuffisant. Jours restants: ${remainingDays}.`, 'Unauthorized Action');
+      this.notificationService.showWarning('La date de début ne peut pas être dans le passé.', 'Action non autorisée');
       return;
     }
-
-    this.demandeService.hasPendingRequest(worker.id).subscribe(hasPending => {
-      if (hasPending) {
-        this. notificationService.showWarning('Vous avez déjà une demande de congé en attente.', 'Unauthorized Action');
-        return;
+    const startDateStr = this.demandeForm.value.startDate.toISOString().split('T')[0];
+    const endDateStr = this.demandeForm.value.endDate.toISOString().split('T')[0];
+    
+    // ✅ Use backend check-eligibility
+    this.demandeService.checkEligibility(worker.id, startDateStr, endDateStr).subscribe({
+      next: (res) => {
+        if (res === 'OK') {
+          const demande = this.demandeForm.value;
+          const file = this.demandeForm.get('attachment')?.value;
+          this.demandeService.createDemande(demande, file).subscribe({
+            next: () => {
+              this.notificationService.showSuccess('✅ Demande envoyée avec succès !', 'Fermer');
+              this.router.navigate(['/conges']);
+            },
+            error: (err) => this.notificationService.showError(`❌ ${err.error?.message || 'Une erreur est survenue.'}`, 'Fermer')
+          });
+        } else {
+          this.notificationService.showWarning(res, 'Action non autorisée');
+        }
+      },
+      error: (err) => {
+        this.notificationService.showError(`❌ ${err.error}`, 'Fermer');
       }
-
-      // All checks passed, proceed with submission
-      const demande = this.demandeForm.value;
-      const file = this.demandeForm.get('attachment')?.value;
-      this.demandeService.createDemande(demande, file).subscribe({
-        next: () => {
-          this.notificationService.showSuccess('✅ Demande envoyée avec succès !', 'Fermer');
-          this.router.navigate(['/conges']);
-        },
-        error: (err) => this.notificationService.showError(`❌ ${err.error?.message || 'Une erreur est survenue.'}`, 'Fermer')
-      });
     });
   }
+  
+  
 
   resetCin() {
     this.demandeService.setSelectedWorker(null);
