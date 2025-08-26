@@ -3,9 +3,10 @@ import { Worker } from "./Worker.model";
 
 export interface MissionRequest {
     id: number;
-    worker: Worker;
+    workers: Worker[];
     destination: string;
     missionDate: string;
+    endDate: string;
     status: string;
     secretaireDecision: Decision;
     rhDecision: Decision;

@@ -39,16 +39,22 @@
   <div class="table-container mat-elevation-z8">
     <table mat-table [dataSource]="dataSource" matSort>
 
-      <!-- Worker Name Column -->
-      <ng-container matColumnDef="workerName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>👤 Demandeur</th>
-        <td mat-cell *matCellDef="let row">{{ row.workerName }}</td>
-      </ng-container>
-
       <!-- Request Date Column -->
       <ng-container matColumnDef="requestDate">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>📅 Date de la demande</th>
         <td mat-cell *matCellDef="let row">{{ row.dateRequest | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <!-- Mission Date Column -->
+      <ng-container matColumnDef="missionDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>📅 Date de la mission</th>
+        <td mat-cell *matCellDef="let row">{{ row.missionDate | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <!-- End Date Column -->
+      <ng-container matColumnDef="endDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>📅 Date de fin</th>
+        <td mat-cell *matCellDef="let row">{{ row.endDate | date: 'mediumDate' }}</td>
       </ng-container>
 
       <!-- Destination Column -->
@@ -75,7 +81,7 @@
             <button class="btn btn-approve" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, true)">✔</button>
             <button class="btn btn-refuse" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, false)">✖</button>
             <button class="btn btn-view" (click)="viewWorkerDetails(row)">👁</button>
-            <button class="btn btn-print" *ngIf="isApproved(row.status)" (click)="generatePdf(row)">🖨</button>
+            <button class="btn btn-print" *ngIf="isApproved(row.status) && currentUser?.role === 'ADMIN' " (click)="generatePdf(row)">🖨</button>
           </div>
         </td>
       </ng-container>
@@ -102,9 +108,3 @@
   (confirmed)="onModalConfirm($event)"
   (closed)="onModalClose()"
 ></app-confirmation-modal>
-
-<app-worker-details-modal 
-  *ngIf="isWorkerModalVisible" 
-  [worker]="selectedWorker" 
-  (close)="closeWorkerModal()">
-</app-worker-details-modal>

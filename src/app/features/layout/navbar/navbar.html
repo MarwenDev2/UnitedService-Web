@@ -1,14 +1,28 @@
 <nav class="navbar" [class.sidebar-collapsed]="isCollapsed">
   
   <div class="navbar-left">
-    <div class="logo">
-      <img src="../../../../assets/logo.png" alt="Logo" class="logo-img">
-      <span class="logo-text">United Service</span>
-    </div>
+    
     <div class="search-bar">
       <i class="fas fa-search search-icon"></i>
-      <input type="text" class="search-input" placeholder="Search...">
+      <input 
+        type="text"
+        class="search-input" 
+        placeholder="Search..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearchInput($event)"
+        (focus)="showSearchResults = true">
+      
+      <!-- Search results dropdown -->
+      <div class="search-results" *ngIf="showSearchResults && searchResults.length > 0">
+        <div 
+          class="search-result-item" 
+          *ngFor="let result of searchResults"
+          (click)="navigateTo(result.path)">
+          {{ result.title }}
+        </div>
+      </div>
     </div>
+
   </div>
   
   <div class="navbar-right">
@@ -49,15 +63,6 @@
           <div class="user-name">{{ user?.name }}</div>
           <div class="user-email">{{ user?.email }}</div>
         </div>
-        <div class="menu-divider"></div>
-        <a href="#" class="menu-item">
-          <i class="fas fa-user"></i>
-          <span>My Profile</span>
-        </a>
-        <a href="#" class="menu-item">
-          <i class="fas fa-cog"></i>
-          <span>Settings</span>
-        </a>
         <div class="menu-divider"></div>
         <a href="#" class="menu-item text-danger" (click)="logout()">
           <i class="fas fa-sign-out-alt"></i>

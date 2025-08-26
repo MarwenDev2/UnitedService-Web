@@ -234,7 +234,7 @@ export class CongesManagement implements OnInit, AfterViewInit {
     if (!demande.worker) return;
 
     const verb = status.startsWith('APPROVED') ? 'approuvée' : 'refusée';
-    const message = `La demande de congé du ${demande.worker.name} du ${new Date(demande.startDate).toLocaleDateString()} au ${new Date(demande.endDate).toLocaleDateString()} a été ${verb}.`;
+    const message = `La demande de congé du ${demande.worker.name} du ${new Date(demande.startDate).toLocaleDateString()} au ${new Date(demande.endDate).toLocaleDateString()} a été ${verb} par ${this.currentUser?.role}.`;
 
     const notification: Partial<Notification> = {
       message,

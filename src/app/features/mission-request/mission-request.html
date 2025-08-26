@@ -1,22 +1,47 @@
 <div class="main-container" *ngIf="isFormVisible">
-    <h2 class="page-title" *ngIf="workerName">{{ workerName }}</h2>
-    <form [formGroup]="missionForm" (ngSubmit)="onSubmit()" class="form-grid">
-      <mat-form-field appearance="fill">
-        <mat-label>Destination</mat-label>
-        <input matInput formControlName="destination" required>
-      </mat-form-field>
-  
-      <mat-form-field appearance="fill">
-        <mat-label>Date de mission</mat-label>
-        <input matInput [matDatepicker]="missionDatePicker" formControlName="missionDate" required>
-        <mat-datepicker-toggle matIconSuffix [for]="missionDatePicker"></mat-datepicker-toggle>
-        <mat-datepicker #missionDatePicker></mat-datepicker>
-      </mat-form-field>
-  
-      <div class="button-group">
-        <button mat-raised-button color="primary" [disabled]="missionForm.invalid || !isWorkerSelected" type="submit">Envoyer la demande</button>
-        <button mat-stroked-button color="warn" (click)="resetCin()">Retapper CIN</button>
-      </div>
-    </form>
-    <div class="feedback-label" *ngIf="missionForm.errors">{{ missionForm.errors | json }}</div>
+  <h2 class="page-title" *ngIf="workerLabel">{{ workerLabel }}</h2>
+
+  <!-- Workers list -->
+  <div class="workers-list" *ngIf="selectedWorkers.length > 0">
+    <h3>Employés sélectionnés :</h3>
+    <ul>
+      <li *ngFor="let w of selectedWorkers; let i = index">
+        👤 {{ w.name }} (CIN: {{ w.cin }})
+        <button mat-icon-button color="warn" (click)="removeWorker(i)" title="Supprimer cet employé">
+          <mat-icon>close</mat-icon>
+        </button>
+      </li>
+    </ul>
   </div>
+
+  <form [formGroup]="missionForm" (ngSubmit)="onSubmit()" class="form-grid">
+    <mat-form-field appearance="fill">
+      <mat-label>Destination</mat-label>
+      <input matInput formControlName="destination" required>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Date de mission</mat-label>
+      <input matInput [matDatepicker]="missionDatePicker" formControlName="missionDate" required>
+      <mat-datepicker-toggle matIconSuffix [for]="missionDatePicker"></mat-datepicker-toggle>
+      <mat-datepicker #missionDatePicker></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Date de fin</mat-label>
+      <input matInput [matDatepicker]="endDatePicker" formControlName="endDate" required>
+      <mat-datepicker-toggle matIconSuffix [for]="endDatePicker"></mat-datepicker-toggle>
+      <mat-datepicker #endDatePicker></mat-datepicker>
+    </mat-form-field>
+
+    <div class="button-group">
+      <button mat-icon-button color="primary" type="button" (click)="addWorkerByCin()" title="Ajouter un autre employé">
+        <mat-icon>person_add</mat-icon>
+      </button>
+      <button mat-raised-button color="primary" [disabled]="missionForm.invalid || selectedWorkers.length === 0" type="submit">
+        Envoyer la demande
+      </button>
+      <button mat-stroked-button color="warn" type="button" (click)="resetCin()">Réinitialiser</button>
+    </div>
+  </form>
+</div>

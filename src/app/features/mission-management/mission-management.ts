@@ -24,10 +24,11 @@ import { Role } from '../../models/Role.enum';
 import { Status } from '../../models/Status.enum';
 import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
 import { WorkerDetailsModalComponent } from '../../shared/components/worker-details-modal/worker-details-modal.component';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { NotificationBackendService } from '../../core/services/notification-backend.service';
 import { Notification } from '../../models/Notification.model';
+import { firstValueFrom } from 'rxjs';
+import { WorkersListModalComponent } from '../../shared/components/workers-list-modal/workers-list-modal';
 
 @Component({
   selector: 'app-mission-management',
@@ -43,14 +44,13 @@ import { Notification } from '../../models/Notification.model';
     MatButtonModule,
     MatIconModule,
     MatSelectModule,
-    ConfirmationModalComponent,
-    WorkerDetailsModalComponent
+    ConfirmationModalComponent
   ],
   templateUrl: './mission-management.html',
   styleUrls: ['./mission-management.scss']
 })
 export class MissionManagementComponent implements OnInit {
-  displayedColumns: string[] = ['workerName', 'requestDate', 'destination', 'status', 'actions'];
+  displayedColumns: string[] = ['requestDate','missionDate','endDate', 'destination', 'status', 'actions'];
   dataSource: MatTableDataSource<any> = new MatTableDataSource();
   private allMissions: any[] = [];
 
@@ -58,7 +58,7 @@ export class MissionManagementComponent implements OnInit {
   isConfirmationModalVisible = false;
   isWorkerModalVisible = false;
   selectedWorker: Worker | null = null;
-
+  selectedWorkers: Worker[] = [];
   stats = { pending: 0, approved: 0, refused: 0 };
   selectedStatus: string = 'TOUS';
   statusOptions: string[] = Object.values(Status);
@@ -91,35 +91,57 @@ export class MissionManagementComponent implements OnInit {
     this.loadMissions();
   }
 
+  private getWorkerName = (w: any) =>
+    (w?.name?.trim?.()) ||
+    [w?.firstName, w?.lastName].filter(Boolean).join(' ').trim() ||
+    'N/A';
+  
+  private getWorkerPosition = (w: any) =>
+    w?.position || w?.jobTitle || w?.fonction || 'N/A';
+
+  
   loadMissions(): void {
     this.missionRequestService.getAllMissions().pipe(
       switchMap(missions => {
-        if (!missions || missions.length === 0) {
-          return of([]);
-        }
-        const missionsWithWorkers$ = missions.map(mission => {
-          // The backend might send workerId directly, or a worker object that is null.
-          // We need to fetch the worker details if they are not already populated.
-          const workerId = mission.worker ? mission.worker.id : (mission as any).workerId;
-          if (!workerId) {
-            // If there's no worker and no workerId, we can't fetch the details.
-            return of({ ...mission, workerName: 'Unknown Worker' });
-          }
-          return this.workerService.getWorkerById(workerId).pipe(
-            map(worker => ({ ...mission, worker, workerName: worker.name }))
-          );
-        });
-        return forkJoin(missionsWithWorkers$);
+        if (!missions || missions.length === 0) return of([]);
+        
+        // Use the new endpoint to get missions with workers
+        return forkJoin(
+          missions.map(mission => 
+            this.missionRequestService.getMissionWithWorkers(mission.id).pipe(
+              catchError(() => {
+                // Fallback to basic mission data if worker fetch fails
+                console.warn('Failed to fetch workers for mission:', mission.id);
+                return of({
+                  ...mission,
+                  workers: [],
+                  workerName: ''
+                });
+              })
+            )
+          )
+        );
       })
-    ).subscribe(missionsWithData => {
-      this.allMissions = missionsWithData;
-      this.dataSource.data = this.allMissions;
-      this.dataSource.paginator = this.paginator;
-      this.dataSource.sort = this.sort;
-      this.calculateStats(this.allMissions);
-      this.applyFilter();
+    ).subscribe({
+      next: (missionsWithWorkers) => {
+        console.log('Missions with workers loaded:', missionsWithWorkers);
+        this.allMissions = missionsWithWorkers.map(mission => ({
+          ...mission,
+          workerName: this.getWorkerName(mission.workers?.[0])
+        }));
+        
+        this.dataSource.data = this.allMissions;
+        if (this.paginator) this.dataSource.paginator = this.paginator;
+        if (this.sort) this.dataSource.sort = this.sort;
+        this.calculateStats(this.allMissions);
+        this.applyFilter();
+      },
+      error: (e) => {
+        console.error('Error loading missions:', e);
+        this.notificationService.showError('Erreur lors du chargement des missions');
+      }
     });
-  }
+  }  
 
   calculateStats(missions: any[]): void {
     this.stats = {
@@ -188,68 +210,52 @@ export class MissionManagementComponent implements OnInit {
   
     const { mission, isApproved } = this.activeDecision;
     const role = this.currentUser.role;
-    const isFinalStep = !isApproved || role === Role.ADMIN;
   
     let updateAction: Observable<any>;
-  
     if (role === Role.RH) {
-      updateAction = this.missionRequestService.updateRHStatus(mission.id, isApproved);
-    } else { // Role.ADMIN
-      updateAction = this.missionRequestService.finalApprove(mission.id, isApproved);
+      updateAction = this.missionRequestService.updateRHStatus(mission.id, isApproved, comment || '');
+    } else {
+      updateAction = this.missionRequestService.finalApprove(mission.id, isApproved, comment || '');
     }
   
-    updateAction.pipe(
-      switchMap(() => {
-        if (!mission.worker || !mission.worker.id) {
-          console.error('Worker information is missing from the mission:', mission);
-          return throwError(() => new Error('Worker information is missing'));
-        }
-        
-        // Create a notification after successful update
-        const notification: Notification = {
-          id: 0,
-          recipient: mission.worker, // Use the worker from the mission
-          message: `La demande d'ordre de mission du ${mission.worker.name} à ${mission.destination} le ${new Date(mission.missionDate).toLocaleDateString()} a été ${isApproved ? 'approuvée' : 'refusée'}.`,
-          read: false,
-          timestamp: new Date().toISOString(),
-        };
-        
-        console.log('Creating notification for worker:', mission.worker);
-        return this.notificationBackendService.createNotification(notification).pipe(
-          catchError(error => {
-            console.error('Error creating notification:', error);
-            // Continue the stream even if notification fails
-            return of(null);
-          })
-        );
-      })
-    ).subscribe({
+    updateAction.subscribe({
       next: () => {
+        // ✅ utilise la méthode centralisée
+        this.createDecisionAndNotify(mission, isApproved, comment, this.currentUser!);
         this.notificationService.showSuccess('Décision enregistrée avec succès.');
-        this.loadMissions();
         this.isConfirmationModalVisible = false;
+        this.loadMissions();
       },
       error: (err) => {
-        this.notificationService.showError("Erreur lors de l'enregistrement de la décision.");
         console.error(err);
+        this.notificationService.showError("Erreur lors de l'enregistrement de la décision.");
       }
     });
   }
+    
 
   onModalClose(): void {
     this.isConfirmationModalVisible = false;
     this.activeDecision = null;
   }
+  isWorkersModalVisible = false;
+  
+  
+viewWorkerDetails(mission: MissionRequest): void {
+  const workers = Array.isArray(mission.workers) ? mission.workers : [];
+  this.dialog.open(WorkersListModalComponent, {
+    width: '500px',
+    data: { workers },
+    disableClose: false
+  });
+}
 
-  viewWorkerDetails(mission: MissionRequest): void {
-    this.selectedWorker = mission.worker;
-    this.isWorkerModalVisible = true;
+  
+  closeWorkersModal(): void {
+    this.isWorkersModalVisible = false;
+    this.selectedWorkers = [];
   }
-
-  closeWorkerModal(): void {
-    this.isWorkerModalVisible = false;
-    this.selectedWorker = null;
-  }
+  
 
   private createDecisionAndNotify(mission: MissionRequest, isApproved: boolean, comment: string | null, currentUser: User): void {
     const decision = { approved: isApproved, comment: comment || '', decisionBy: currentUser, date: new Date() };
@@ -263,27 +269,50 @@ export class MissionManagementComponent implements OnInit {
   }
 
   private createNotification(mission: MissionRequest, isApproved: boolean, isFinal: boolean, currentUser: User): void {
-    const notifMsg = this.createNotificationMessage(mission, isApproved, isFinal, currentUser.role, currentUser.name);
-    const title = isFinal ? 'Décision enregistrée' : 'Étape intermédiaire';
-    if (isApproved) {
-      this.notificationService.showSuccess(notifMsg, title);
-    } else {
-      this.notificationService.showWarning(notifMsg, title);
-    }
+    const workers = Array.isArray(mission.workers) ? mission.workers : [];
+    
+    workers.forEach((w: any) => {
+      // Get the full worker object or at least ensure we have proper structure
+      const recipient = typeof w === 'object' ? w : { id: w };
+      
+      if (!recipient.id) {
+        console.warn('Skipping notification: No recipient ID', w);
+        return;
+      }
+  
+      const notifMsg = this.createNotificationMessage(mission, isApproved, isFinal, currentUser.role, currentUser.name);
+  
+      const notification: Notification = {
+        id: 0,
+        recipient: recipient, // Send the full recipient object
+        message: notifMsg,
+        read: false,
+        timestamp: new Date().toISOString()
+      };
+  
+      console.log('Creating notification:', notification);
+      
+      this.notificationBackendService.createNotification(notification).subscribe({
+        next: () => console.log('Notification sent successfully'),
+        error: (error) => {
+          console.error('Error sending notification:', error);
+          this.notificationService.showError("Erreur lors de l'envoi de la notification");
+        }
+      });
+    });
   }
+  
 
   private createNotificationMessage(mission: MissionRequest, isApproved: boolean, isFinal: boolean, role: Role, adminName: string): string {
-    const fullName = (mission as any).workerName || 'the employee';
+    const first = (mission as any)?.workers?.[0] || null;
+    const fullName = first ? this.getWorkerName(first) : 'l’employé';
     const roleName = role === Role.ADMIN ? 'Directeur' : 'RH';
-
+  
     if (!isApproved) {
       return `❌ L'ordre de mission pour ${fullName} à ${mission.destination} a été rejeté par ${roleName} (${adminName}).`;
     }
-    if (isFinal) {
-      return `✅ L'ordre de mission pour ${fullName} à ${mission.destination} a été approuvé.`;
-    }
-    return `✔ L'ordre de mission pour ${fullName} à ${mission.destination} a été validé par ${roleName} (${adminName}). En attente de la validation du Directeur.`;
-  }
+    return `✅ L'ordre de mission pour ${fullName} à ${mission.destination} a été approuvé.`;
+  }  
 
   formatStatus(status: Status | string): string {
     const statusEnum = status as Status;
@@ -297,75 +326,208 @@ export class MissionManagementComponent implements OnInit {
     }
   }
 
-  generatePdf(mission: any): void {
-    const { workerName, destination, missionDate, dateRequest, status, worker } = mission;
-    const doc = new jsPDF();
-    const pdfContent = `
-      <div style="font-family: 'Poppins', sans-serif; padding: 30px; width: 210mm; margin: 0 auto;">
-        <!-- Header with Logo and Company Name -->
-        <div style="text-align: center; margin-bottom: 20px;">
-          <img src="assets/logo.png" alt="United Service Logo" style="max-height: 80px; margin-bottom: 10px;">
-          <h1 style="color: #C6A34F; font-size: 28px; font-weight: 600;">United Service</h1>
-          <p style="color: #333; font-size: 14px;">123 Rue de l'Entreprise, Tunis, Tunisie | Tel: +216 71 234 567 | Email: contact@unitedservice.tn</p>
-        </div>
+  async generatePdf(mission: MissionRequest): Promise<void> {
+  try {
+    const { destination, missionDate, endDate, workers } = mission;
+    const purpose = "mission professionnelle";
 
-        <!-- Title -->
-        <h2 style="color: #333; font-size: 24px; text-align: center; border-bottom: 3px solid #C6A34F; padding-bottom: 10px; margin-bottom: 20px;">Ordre de Mission</h2>
+    if (!workers || workers.length === 0) {
+      this.notificationService.showWarning("Aucun travailleur trouvé pour cette mission", "PDF non généré");
+      return;
+    }
 
-        <!-- Mission Details -->
-        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="color: #C6A34F; font-size: 18px; margin-bottom: 10px;">Détails de la Mission</h3>
-          <p><strong>Demandeur :</strong> <span style="color: #555;">${workerName}</span></p>
-          <p><strong>CIN :</strong> <span style="color: #555;">${worker?.cin || 'N/A'}</span></p>
-          <p><strong>Adresse :</strong> <span style="color: #555;">${worker?.address || 'N/A'}</span></p>
-          <p><strong>Date de la demande :</strong> <span style="color: #555;">${new Date(dateRequest).toLocaleDateString('fr-FR')}</span></p>
-          <p><strong>Date de la mission :</strong> <span style="color: #555;">${new Date(missionDate).toLocaleDateString('fr-FR')}</span></p>
-          <p><strong>Destination :</strong> <span style="color: #555;">${destination}</span></p>
-          <p><strong>Statut :</strong> <span style="color: ${status === 'ACCEPTE' ? '#28a745' : '#dc3545'}; font-weight: bold;">${this.formatStatus(status)}</span></p>
-        </div>
+    // --- Create PDF ---
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // A4
+    const { height, width } = page.getSize();
 
-        <!-- Decisions -->
-        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px;">
-          <h3 style="color: #C6A34F; font-size: 18px; margin-bottom: 10px;">Historique des Décisions</h3>
-          <p><strong>Sécrétaire :</strong> <span style="color: #555;">${mission.secretaireDecision?.approved ? 'Approuvé' : 'Refusé'} ${mission.secretaireDecision?.comment ? ` - ${mission.secretaireDecision.comment}` : ''}</span></p>
-          <p><strong>RH :</strong> <span style="color: #555;">${mission.rhDecision?.approved ? 'Approuvé' : mission.rhDecision ? 'Refusé' : 'En attente'} ${mission.rhDecision?.comment ? ` - ${mission.rhDecision.comment}` : ''}</span></p>
-          <p><strong>Directeur :</strong> <span style="color: #555;">${mission.adminDecision?.approved ? 'Approuvé' : mission.adminDecision ? 'Refusé' : 'En attente'} ${mission.adminDecision?.comment ? ` - ${mission.adminDecision.comment}` : ''}</span></p>
-        </div>
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-        <!-- Footer -->
-        <div style="margin-top: 30px; text-align: right; color: #777; font-size: 12px; font-style: italic;">
-          Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </div>
-    `;
+    // Load logo
+    const logoUrl = "assets/logo.png";
+    const logoBytes = await fetch(logoUrl).then(res => res.arrayBuffer());
+    const logoImage = await pdfDoc.embedPng(logoBytes);
+    const logoDims = logoImage.scale(0.15); // Resize logo
 
-    const printWindow = window.open('', '', 'height=600,width=800');
-    if (printWindow) {
-      printWindow.document.write('<html><head><title>Ordre de Mission - United Service</title>');
-      printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">');
-      printWindow.document.write('<style>body { margin: 0; padding: 0; font-family: "Poppins", sans-serif; }</style>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(pdfContent);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
-      printWindow.close();
+    // Place logo top-left
+    page.drawImage(logoImage, {
+      x: 50,
+      y: height - logoDims.height - 30,
+      width: logoDims.width,
+      height: logoDims.height
+    });
 
-      // Generate and download PDF
-      const pdfElement = document.createElement('div');
-      pdfElement.innerHTML = pdfContent;
-      document.body.appendChild(pdfElement);
+    // Company name next to logo
+    page.drawText("UNITED SERVICES", {
+      x: 50 + logoDims.width + 10,
+      y: height - 50,
+      size: 18,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    });
 
-      html2canvas(pdfElement, { scale: 2, useCORS: true }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`ordre_de_mission_${workerName}_${new Date().toISOString().split('T')[0]}.pdf`);
-        document.body.removeChild(pdfElement);
+    // Title centered
+    page.drawText("ORDRE DE MISSION", {
+      x: width / 2 - boldFont.widthOfTextAtSize("ORDRE DE MISSION", 18) / 2,
+      y: height - 100,
+      size: 18,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    });
+
+    // Date right-aligned
+    page.drawText(`Date: ${new Date().toLocaleDateString("fr-FR")}`, {
+      x: width - 150,
+      y: height - 130,
+      size: 12,
+      font: font,
+      color: rgb(0, 0, 0)
+    });
+
+    // Body text
+    const bodyStartY = height - 170;
+    const bodyLines = [
+      "Monsieur,",
+      "Nous soussignés UNITED SERVICES certifions par la présente que la liste de personnel",
+      `mentionnée ci-dessous, se déplacera à ${destination} pour ${purpose},`,
+      `à partir du ${new Date(missionDate).toLocaleDateString("fr-FR")} au ${new Date(endDate).toLocaleDateString("fr-FR")}.`
+    ];
+
+    bodyLines.forEach((line, i) => {
+      page.drawText(line, {
+        x: 50,
+        y: bodyStartY - i * 18,
+        size: 12,
+        font: font,
+        color: rgb(0, 0, 0)
+      });
+    });
+
+    // Table
+    const tableStartY = bodyStartY - bodyLines.length * 18 - 40;
+    const rowHeight = 25;
+    const colWidths = [160, 100, 140, 120];
+    const headers = ["Nom & Prénom", "N° CIN", "Fonction", "Département"];
+    const tableWidth = colWidths.reduce((sum, w) => sum + w, 0);
+
+    // Draw headers
+    let x = 50;
+    headers.forEach((h, i) => {
+      page.drawText(h, {
+        x: x + 5,
+        y: tableStartY - 18,
+        size: 11,
+        font: boldFont,
+        color: rgb(0, 0, 0)
+      });
+      x += colWidths[i];
+    });
+
+    // Worker rows
+    workers.forEach((worker, index) => {
+      const rowY = tableStartY - 40 - index * rowHeight;
+      x = 50;
+
+      const values = [
+        this.getWorkerName(worker) || "N/A",
+        worker.cin || "N/A",
+        this.getWorkerPosition(worker) || "N/A",
+        worker.department || "N/A"
+      ];
+
+      values.forEach((val, i) => {
+        page.drawText(String(val), {
+          x: x + 5,
+          y: rowY,
+          size: 10,
+          font: font,
+          color: rgb(0, 0, 0)
+        });
+        x += colWidths[i];
+      });
+    });
+
+    // Table borders
+    for (let i = 0; i <= workers.length + 1; i++) {
+      page.drawLine({
+        start: { x: 50, y: tableStartY - i * rowHeight },
+        end: { x: 50 + tableWidth, y: tableStartY - i * rowHeight },
+        thickness: 1,
+        color: rgb(0, 0, 0)
       });
     }
+    x = 50;
+    for (let i = 0; i <= colWidths.length; i++) {
+      page.drawLine({
+        start: { x, y: tableStartY },
+        end: { x, y: tableStartY - (workers.length + 1) * rowHeight },
+        thickness: 1,
+        color: rgb(0, 0, 0)
+      });
+      if (i < colWidths.length) x += colWidths[i];
+    }
+
+    // Signature
+    const signatureY = tableStartY - (workers.length + 2) * rowHeight - 50;
+    page.drawText("Meilleures Salutations,", {
+      x: 50,
+      y: signatureY,
+      size: 12,
+      font: font,
+      color: rgb(0, 0, 0)
+    });
+
+    page.drawText("Le Directeur Général", {
+      x: width - 200,
+      y: signatureY - 40,
+      size: 12,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    });
+
+    // Footer
+    const footerLines = [
+      "09 Rue de l'innovation zone industrielle EL AGBA-TUNIS",
+      "Email : dzg@unitedservices.com.tn",
+      "M.F : 1239567/N - RC : B3155712012 - RIB : 10 004 034 180921 4 788 88 STB Bab Souika"
+    ];
+    footerLines.forEach((line, i) => {
+      page.drawText(line, {
+        x: 50,
+        y: 60 - i * 12,
+        size: 9,
+        font: font,
+        color: rgb(0, 0, 0)
+      });
+    });
+
+    // Save & download
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const workerLabel = workers.length > 0 ? this.getWorkerName(workers[0]).replace(/\s+/g, "_") : `mission_${new Date(missionDate).toISOString().split("T")[0]}`;
+
+    link.download = `Ordre_de_Mission_${destination}_${missionDate}.pdf`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    this.notificationService.showSuccess("PDF généré avec succès");
+  } catch (err) {
+    console.error("Error generating PDF:", err);
+    this.notificationService.showError("Erreur lors de la génération du PDF");
   }
+}
+  openWorkerDetails(worker: Worker): void {
+    this.selectedWorker = worker;
+    this.isWorkerModalVisible = true;
+  }
+
+  closeWorkerModal(): void {
+    this.isWorkerModalVisible = false;
+    this.selectedWorker = null;
+  }
+
 }

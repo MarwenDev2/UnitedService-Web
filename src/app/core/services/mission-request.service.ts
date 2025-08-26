@@ -10,17 +10,17 @@ import { Worker } from '../../models/Worker.model';
 })
 export class MissionRequestService {
   private apiUrl = `${environment.apiUrl}/api/missions`;
-  private selectedWorkerId: number | null = null;
+  private selectedWorkerIds: number[] = [];
 
   constructor(private http: HttpClient) {}
 
-  // Set and get selected worker
-  setSelectedWorker(workerId: number) {
-    this.selectedWorkerId = workerId;
+  // Set and get selected workers
+  setSelectedWorkers(workerIds: number[]) {
+    this.selectedWorkerIds = workerIds;
   }
 
-  getSelectedWorker(): number | null {
-    return this.selectedWorkerId;
+  getSelectedWorkers(): number[] {
+    return this.selectedWorkerIds;
   }
 
   // API calls
@@ -32,12 +32,16 @@ export class MissionRequestService {
     return this.http.get<MissionRequest[]>(`${this.apiUrl}/status/${status}`);
   }
 
-  createMission(workerId: number, destination: string, missionDate: string): Observable<MissionRequest> {
-    const params = new HttpParams()
-      .set('workerId', workerId.toString())
+  createMission(workerIds: number[], destination: string, missionDate: string, endDate: string): Observable<MissionRequest> {
+    let params = new HttpParams()
       .set('destination', destination)
-      .set('missionDate', missionDate);
-
+      .set('missionDate', missionDate)
+      .set('endDate', endDate);
+  
+    workerIds.forEach(id => {
+      params = params.append('workerIds', id.toString());
+    });
+  
     return this.http.post<MissionRequest>(this.apiUrl, null, { params });
   }
 
@@ -68,4 +72,9 @@ export class MissionRequestService {
   hasPending(workerId: number): Observable<boolean> {
     return this.http.get<boolean>(`${this.apiUrl}/has-pending/${workerId}`);
   }
+
+  getMissionWithWorkers(id: number): Observable<MissionRequest> {
+    return this.http.get<MissionRequest>(`${this.apiUrl}/${id}/with-workers`);
+  }
+
 }

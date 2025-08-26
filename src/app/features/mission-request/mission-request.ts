@@ -14,6 +14,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { CinPopup } from '../cin-popup/cin-popup';
 import { WorkerService } from '../../core/services/worker.service';
 import { Worker } from '../../models/Worker.model';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   standalone: true,
@@ -24,6 +25,7 @@ import { Worker } from '../../models/Worker.model';
     MatDatepickerModule,
     MatNativeDateModule,
     MatButtonModule,
+    MatIconModule,
     ReactiveFormsModule,
   ],
   selector: 'app-mission-request',
@@ -32,10 +34,9 @@ import { Worker } from '../../models/Worker.model';
 })
 export class MissionRequest implements OnInit {
   missionForm: FormGroup;
-  workerName: string = '';
+  selectedWorkers: Worker[] = [];
+  workerLabel: string = '';
   isFormVisible: boolean = true;
-  isWorkerSelected: boolean = false;
-  worker: Worker | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -47,109 +48,130 @@ export class MissionRequest implements OnInit {
   ) {
     this.missionForm = this.fb.group({
       destination: [{ value: '', disabled: true }, Validators.required],
-      missionDate: [{ value: '', disabled: true }, Validators.required]
+      missionDate: [{ value: '', disabled: true }, Validators.required],
+      endDate: [{ value: '', disabled: true }, Validators.required],
     });
   }
 
   ngOnInit() {
-    this.checkWorker();
+    this.checkWorkers();
   }
 
-  checkWorker() {
-    const workerId = this.missionService.getSelectedWorker();
-    if (!workerId) {
+  checkWorkers() {
+    const workerIds = this.missionService.getSelectedWorkers();
+    if (!workerIds || workerIds.length === 0) {
       this.openCinPopup();
     } else {
-      this.workerService.getWorkerById(workerId).subscribe(worker => {
+      this.loadWorkers(workerIds);
+    }
+  }
+
+  loadWorkers(ids: number[]) {
+    this.selectedWorkers = [];
+    ids.forEach(id => {
+      this.workerService.getWorkerById(id).subscribe(worker => {
         if (worker) {
-          this.worker = worker;
-          const civilite = this.worker.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
-          this.workerName = `Demande d'ordre de mission pour ${civilite} ${this.worker.name}`;
+          this.selectedWorkers.push(worker);
+          this.updateLabel();
           this.enableForm();
-          this.isWorkerSelected = true;
-        } else {
-          this.openCinPopup();
         }
       });
+    });
+  }
+
+  updateLabel() {
+    if (this.selectedWorkers.length === 1) {
+      const w = this.selectedWorkers[0];
+      const civilite = w.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
+      this.workerLabel = `Demande d'ordre de mission pour ${civilite} ${w.name}`;
+    } else if (this.selectedWorkers.length > 1) {
+      this.workerLabel = `Demande d'ordre de mission pour ${this.selectedWorkers.length} employés`;
     }
   }
 
   openCinPopup() {
-    const dialogRef = this.dialog.open(CinPopup, {
-      width: '400px'
-    });
-
+    const dialogRef = this.dialog.open(CinPopup, { width: '400px' });
+  
     dialogRef.afterClosed().subscribe((worker: Worker) => {
       if (worker) {
-        this.missionService.setSelectedWorker(worker.id);
-        this.worker = worker;
-        const civilite = this.worker.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
-        this.workerName = `Demande d'ordre de mission pour ${civilite} ${this.worker.name}`;
+        const alreadyExists = this.selectedWorkers.some(w => w.cin === worker.cin);
+        if (alreadyExists) {
+          this.notificationService.showWarning(
+            `⚠️ L'employé avec le CIN ${worker.cin} est déjà ajouté.`
+          );
+          return; // Do not add duplicate
+        }
+  
+        this.selectedWorkers.push(worker);
+        this.missionService.setSelectedWorkers(this.selectedWorkers.map(w => w.id));
+        this.updateLabel();
         this.enableForm();
-        this.isWorkerSelected = true;
-      } else {
-        // If the popup is closed without a worker, we don't do anything
-        // This might need a different logic depending on the app's requirements
       }
     });
   }
+  
 
-  setWorkerLabel(workerId: number) {
-    this.workerService.getWorkerById(workerId).subscribe({
-      next: (worker) => {
-        this.worker = worker;
-        const civilite = this.worker.gender.toLowerCase() === 'homme' ? 'Mr' : 'Mme';
-        this.workerName = `Demande d'ordre de mission pour ${civilite} ${this.worker.name}`;
-      },
-      error: (err) => {
-        this.workerName = 'Could not load worker information.';
-        console.error(err);
-      }
-    });
+  addWorkerByCin() {
+    this.openCinPopup();
   }
 
   enableForm() {
     this.missionForm.get('destination')?.enable();
     this.missionForm.get('missionDate')?.enable();
+    this.missionForm.get('endDate')?.enable();
   }
 
   disableForm() {
     this.missionForm.get('destination')?.disable();
     this.missionForm.get('missionDate')?.disable();
+    this.missionForm.get('endDate')?.disable();
   }
 
   onSubmit() {
-    if (this.missionForm.valid && this.isWorkerSelected) {
-      const workerId = this.missionService.getSelectedWorker();
-      if (workerId) {
-        const mission = {
-          workerId,
-          destination: this.missionForm.value.destination,
-          missionDate: this.missionForm.value.missionDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
-        };
-        this.missionService.createMission(this.worker!.id, mission.destination, mission.missionDate).subscribe({
-          next: () => {
-            this.notificationService.showSuccess('✅ Demande envoyée avec succès !');
-            this.router.navigate(['/missions-management']); // Redirect on success
-          },
-          error: (err) => {
-            this.notificationService.showError('❌ Erreur lors de l\'envoi de la demande');
-            console.error(err);
-          }
-        });
-      }
+    if (this.missionForm.valid && this.selectedWorkers.length > 0) {
+      const mission = {
+        workerIds: this.selectedWorkers.map(w => w.id),
+        destination: this.missionForm.value.destination,
+        missionDate: this.missionForm.value.missionDate.toISOString().split('T')[0],
+        endDate: this.missionForm.value.endDate.toISOString().split('T')[0],
+      };
+
+      this.missionService.createMission(
+        mission.workerIds,
+        mission.destination,
+        mission.missionDate,
+        mission.endDate
+      ).subscribe({
+        next: () => {
+          this.notificationService.showSuccess('✅ Demande envoyée avec succès !');
+          this.router.navigate(['/missions']);
+        },
+        error: (err) => {
+          this.notificationService.showError('❌ Erreur lors de l\'envoi de la demande');
+          console.error(err);
+        }
+      });
+    }
+  }
+
+  removeWorker(index: number) {
+    this.selectedWorkers.splice(index, 1);
+    this.missionService.setSelectedWorkers(this.selectedWorkers.map(w => w.id));
+    this.updateLabel();
+    if (this.selectedWorkers.length === 0) {
+      this.disableForm();
     }
   }
 
   resetCin() {
-    this.missionService.setSelectedWorker(0);
-    this.worker = null;
-    this.workerName = '';
+    this.missionService.setSelectedWorkers([]);
+    this.selectedWorkers = [];
+    this.workerLabel = '';
     this.disableForm();
-    this.isWorkerSelected = false;
     this.missionForm.reset({
       destination: { value: '', disabled: true },
-      missionDate: { value: '', disabled: true }
+      missionDate: { value: '', disabled: true },
+      endDate: { value: '', disabled: true }
     });
     this.openCinPopup();
   }

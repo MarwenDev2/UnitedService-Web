@@ -75,7 +75,7 @@
           </a>
         </li>
         <li>
-          <a routerLink="/add-worker" [class.active]="isActive('add-worker')">
+          <a routerLink="/add-worker" [class.active]="isActive('add-worker')" *ngIf="isRh">
             <i class="fas fa-plus"></i>
             <span *ngIf="!isCollapsed">Ajouter Employé</span>
           </a>
