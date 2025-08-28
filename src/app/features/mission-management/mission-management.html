@@ -1,7 +1,6 @@
 <div class="conge-management-container">
   <div class="header">
-    <h1 class="title">✈️ Gestion des Ordres de Mission</h1>
-    <p class="subtitle">Tableau de bord administratif pour les ordres de mission</p>
+    <h1 class="title">Ordres de missions</h1>
   </div>
 
   <!-- Stats Row -->
@@ -81,7 +80,7 @@
             <button class="btn btn-approve" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, true)">✔</button>
             <button class="btn btn-refuse" *ngIf="canApprove(row.status)" (click)="openConfirmationModal(row, false)">✖</button>
             <button class="btn btn-view" (click)="viewWorkerDetails(row)">👁</button>
-            <button class="btn btn-print" *ngIf="isApproved(row.status) && currentUser?.role === 'ADMIN' " (click)="generatePdf(row)">🖨</button>
+            <button class="btn btn-print" *ngIf="isApproved(row.status) && currentUser?.role === 'SECRETAIRE'" (click)="generatePdf(row)">🖨</button>
           </div>
         </td>
       </ng-container>

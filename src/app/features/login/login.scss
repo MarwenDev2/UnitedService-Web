@@ -5,10 +5,17 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0d47a1, #1976d2, #42a5f5);
+  background: linear-gradient(
+    135deg,
+    #cca45e,       /* Main golden tone */
+    #e6c27a,       /* Lighter warm tone for highlights */
+    #a38347        /* Darker accent for depth */
+  );
   font-family: 'Poppins', sans-serif;
   animation: fadeIn 1s ease-in-out;
 }
+
+
 
 @keyframes fadeIn {
   from { opacity: 0; }

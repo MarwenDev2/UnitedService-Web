@@ -56,6 +56,7 @@ export class MissionManagementComponent implements OnInit {
 
   currentUser: User | null = null;
   isConfirmationModalVisible = false;
+  isSecretaire = false;
   isWorkerModalVisible = false;
   selectedWorker: Worker | null = null;
   selectedWorkers: Worker[] = [];
@@ -89,6 +90,7 @@ export class MissionManagementComponent implements OnInit {
   ngOnInit(): void {
     this.currentUser = this.authService.currentUserValue;
     this.loadMissions();
+    this.isSecretaire = this.currentUser?.role === Role.SECRETAIRE;
   }
 
   private getWorkerName = (w: any) =>
@@ -186,7 +188,7 @@ export class MissionManagementComponent implements OnInit {
   isApproved(status: Status): boolean {
     if (!this.currentUser) return false;
     const role = this.currentUser.role;
-    return (role === Role.RH && status === Status.ACCEPTE) || 
+    return (role === Role.SECRETAIRE && status === Status.ACCEPTE) || 
            (role === Role.ADMIN && status === Status.ACCEPTE);
   }
 
@@ -262,10 +264,6 @@ viewWorkerDetails(mission: MissionRequest): void {
     this.decisionService.createDecision(decision).subscribe(() => {
       this.createNotification(mission, isApproved, true, currentUser);
     });
-  }
-
-  private createIntermediateNotification(mission: MissionRequest, currentUser: User): void {
-    this.createNotification(mission, true, false, currentUser);
   }
 
   private createNotification(mission: MissionRequest, isApproved: boolean, isFinal: boolean, currentUser: User): void {

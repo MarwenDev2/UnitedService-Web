@@ -3,14 +3,14 @@
     <div class="col-12">
       <div class="card">
         <div class="card-header pb-0">
-          <h5 class="mb-0">Nouvelle Demande d'Avance sur Salaire</h5>
+          <h5 class="mb-0">Demande d'avance sur salaire</h5>
           <p class="text-sm mb-0">Remplissez les informations ci-dessous pour soumettre une nouvelle demande.</p>
         </div>
         <div class="card-body p-4">
           <form #demandeForm="ngForm" (ngSubmit)="onSubmit(demandeForm)" novalidate>
 
             <div class="form-group mb-4">
-              <label for="cin" class="form-label">CIN de l'Employé</label>
+              <label for="cin" class="form-label">CIN de l'employé</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-id-card"></i></span>
                 <input type="text" class="form-control" id="cin" name="cin" 
@@ -33,7 +33,7 @@
             </div>
 
             <div class="form-group mb-4">
-              <label for="requestedAmount" class="form-label">Montant Demandé (TND)</label>
+              <label for="requestedAmount" class="form-label">Montant demandé (TND)</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
                 <input type="number" class="form-control" id="requestedAmount" name="requestedAmount" 
@@ -49,7 +49,7 @@
 
             <div class="text-center">
               <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="demandeForm.invalid || !workerId">
-                <i class="fas fa-paper-plane me-2"></i>Soumettre la Demande
+                <i class="fas fa-paper-plane me-2"></i>Soumettre la demande
               </button>
             </div>
 
