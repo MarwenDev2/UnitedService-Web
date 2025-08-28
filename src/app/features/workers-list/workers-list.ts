@@ -143,11 +143,22 @@ export class WorkersListComponent implements OnInit {
   // --- Status Change Logic ---
 
   promptChangeStatus(worker: Worker): void {
-    if (!this.isRH) return;
+    console.log('promptChangeStatus called for worker:', worker);
+    if (this.isRH) {
+      console.log('User is not authorized to change status');
+      return;
+    }
 
     this.workerToUpdate = worker;
+    this.workerToDelete = null; // Ensure workerToDelete is null
     const newStatus = worker.status === 'actif' ? 'inactif' : 'actif';
     const newStatusFrench = newStatus === 'actif' ? 'actif' : 'inactif';
+
+    console.log('Setting up confirmation modal for status change:', {
+      currentStatus: worker.status,
+      newStatus,
+      workerName: worker.name
+    });
 
     this.modalConfig = {
       title: 'Confirmation de changement de statut',
@@ -155,25 +166,55 @@ export class WorkersListComponent implements OnInit {
       confirmButtonText: 'Confirmer',
     };
 
+    console.log('Showing confirmation modal');
     this.isConfirmationModalVisible = true;
   }
 
   onStatusChangeConfirm(): void {
-    if (!this.workerToUpdate) return;
-
+    console.log('onStatusChangeConfirm called');
+    
+    if (!this.workerToUpdate) {
+      console.error('No worker to update');
+      return;
+    }
+    
     const worker = this.workerToUpdate;
     const newStatus = worker.status === 'actif' ? 'inactif' : 'actif';
-
+    
+    console.log('Updating worker status:', {
+      workerId: worker.id,
+      workerName: worker.name,
+      currentStatus: worker.status,
+      newStatus
+    });
+    
+    // Update the worker's status locally for immediate feedback
     const updatedWorker = { ...worker, status: newStatus as 'actif' | 'inactif' };
+    
+    // Update the worker in the list
+    const currentWorkers = this.workers$.value;
+    const updatedWorkers = currentWorkers.map(w => 
+      w.id === updatedWorker.id ? updatedWorker : w
+    );
+    this.workers$.next(updatedWorkers);
+    
+    console.log('Sending update to server...');
+    // Send the update to the server
     this.workerService.updateWorker(worker.id, updatedWorker).subscribe({
       next: () => {
+        console.log('Worker status updated successfully on server');
         this.notificationService.showSuccess(`Le statut de ${worker.name} a été mis à jour.`);
-        this.loadInitialData(); // Reload data to reflect the change
+        // Refresh the data to ensure consistency
+        this.loadInitialData();
       },
-      error: () => {
-        this.notificationService.showError('Une erreur est survenue lors de la mise à jour.');
+      error: (error) => {
+        console.error('Error updating worker status:', error);
+        // Revert the local change on error
+        this.workers$.next(currentWorkers);
+        this.notificationService.showError('Une erreur est survenue lors de la mise à jour du statut.');
       },
       complete: () => {
+        console.log('Status update process completed');
         this.onStatusChangeCancel();
       }
     });

@@ -3,7 +3,13 @@
 :host {
   display: block;
   font-family: 'Poppins', sans-serif;
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  min-height: 100%;
+  
+  @media (min-width: 768px) {
+    padding: 1.5rem 2rem;
+  }
 }
 
 .conge-management-container {
@@ -27,9 +33,21 @@
   }
 
   .stats-row {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    
+    @media (min-width: 600px) {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    
+    @media (min-width: 960px) {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
 
     .stat-card {
       flex: 1;
@@ -63,8 +81,31 @@
 
   .filters-row {
     display: flex;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    
+    @media (min-width: 600px) {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      
+      .filter-field {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 0;
+      }
+    }
+    
+    @media (min-width: 960px) {
+      flex-wrap: nowrap;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      
+      .filter-field {
+        flex: 1;
+      }
+    }
 
     .filter-field {
       flex: 1;
@@ -72,10 +113,50 @@
   }
 
   .table-container {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+    position: relative;
+    
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+    
+    @media (max-width: 959px) {
+      border-radius: 8px;
+      margin-left: -0.5rem;
+      margin-right: -0.5rem;
+      width: calc(100% + 1rem);
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+      }
+    }
+    
+    table {
+      min-width: 900px;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      
+      @media (max-width: 599px) {
+        min-width: 100%;
+      }
+    }
   }
 
   .mat-table {
@@ -87,11 +168,57 @@
     font-weight: 600;
     color: #555;
     background-color: #f5f5f5;
+    white-space: nowrap;
+    padding: 1rem 1.5rem;
+    
+    @media (max-width: 599px) {
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+    }
+    
+    &:first-child {
+      padding-left: 1.5rem;
+      
+      @media (max-width: 599px) {
+        padding-left: 1rem;
+      }
+    }
+    
+    &:last-child {
+      padding-right: 1.5rem;
+      
+      @media (max-width: 599px) {
+        padding-right: 1rem;
+      }
+    }
   }
 
   .mat-cell {
     color: #444;
     border-bottom-color: #eee;
+    padding: 1rem 1.5rem;
+    vertical-align: middle;
+    
+    @media (max-width: 599px) {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+    }
+    
+    &:first-child {
+      padding-left: 1.5rem;
+      
+      @media (max-width: 599px) {
+        padding-left: 1rem;
+      }
+    }
+    
+    &:last-child {
+      padding-right: 1.5rem;
+      
+      @media (max-width: 599px) {
+        padding-right: 1rem;
+      }
+    }
   }
 
   .status-badge {
@@ -114,7 +241,47 @@
 
   .action-buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
+    padding: 0.25rem 0;
+    
+    @media (max-width: 599px) {
+      gap: 0.5rem;
+      justify-content: flex-start;
+      
+      .btn {
+        padding: 0.5rem;
+        font-size: 1.1rem;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.03);
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.08);
+        }
+        
+        .mat-icon {
+          margin: 0;
+          font-size: 1.25rem;
+          width: auto;
+          height: auto;
+        }
+      }
+    }
+    
+    @media (min-width: 600px) and (max-width: 959px) {
+      gap: 0.5rem;
+      
+      .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 1rem;
+      }
+    }
 
     .btn {
       border: none;
