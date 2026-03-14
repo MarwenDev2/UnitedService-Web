@@ -1,0 +1,26 @@
+<div class="stats-container animate-fadeIn">
+    <mat-card class="stats-card">
+      <mat-card-header>
+        <mat-card-title>📊 Statistiques des Demandes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="total-label">Total des demandes : {{ totalDemandes }}</div>
+        <div class="charts-container" *ngIf="!isLoading; else loading">
+          <div class="chart-item">
+            <canvas baseChart [data]="statusChartData" [options]="statusChartOptions" [type]="'pie'"></canvas>
+          </div>
+          <div class="chart-item">
+            <canvas baseChart [data]="typeChartData" [options]="typeChartOptions" [type]="'pie'"></canvas>
+          </div>
+          <div class="chart-item">
+            <canvas baseChart [data]="monthlyChartData" [options]="monthlyChartOptions" [type]="'bar'"></canvas>
+          </div>
+        </div>
+        <ng-template #loading>
+          <div class="loading-spinner">
+            <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>

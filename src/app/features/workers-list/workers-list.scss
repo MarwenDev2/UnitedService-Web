@@ -1,0 +1,521 @@
+@use 'sass:math';
+@use '../../../styles.scss' as *;
+
+.workers-list-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  
+  @media (min-width: 768px) {
+    padding: 1.5rem 2rem;
+  }
+}
+
+// Header with better mobile spacing
+.header-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    
+    @media (min-width: 768px) {
+      font-size: 2rem;
+      text-align: left;
+    }
+  }
+
+  .filter-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    
+    @media (min-width: 768px) {
+      flex-direction: row;
+      gap: 1rem;
+      width: auto;
+    }
+
+    select, input {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      width: 100%;
+      
+      @media (min-width: 768px) {
+        width: auto;
+        min-width: 200px;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+      }
+      
+      &::placeholder {
+        color: var(--text-tertiary);
+      }
+    }
+  }
+}
+
+// Main scrollable area
+.scroll-pane {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  
+  @media (min-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Responsive grid for workers
+.workers-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  width: 100%;
+  
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+}
+
+// Card animation
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Worker card with better mobile layout
+.worker-card {
+  background-color: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+  max-width: 100%;
+  margin: 0 auto;
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-color);
+  }
+
+  // Card header - stacked on mobile, side by side on tablet+
+  .card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+    
+    @media (min-width: 480px) {
+      flex-direction: row;
+      align-items: center;
+      text-align: left;
+      gap: 1.25rem;
+    }
+
+    .worker-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--accent-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      
+      @media (min-width: 480px) {
+        width: 90px;
+        height: 90px;
+      }
+    }
+
+    .name-box {
+      flex: 1;
+      
+      .worker-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+        
+        @media (min-width: 480px) {
+          font-size: 1.5rem;
+        }
+      }
+      
+      .worker-position {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  // Details - better spacing for mobile
+  .card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.875rem;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      
+      i {
+        color: var(--accent-color);
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      
+      span {
+        font-weight: 500;
+        flex: 1;
+        word-break: break-word;
+      }
+    }
+  }
+
+  // Status badges - horizontal scroll on mobile if needed
+  .status-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    
+    .status-badge {
+      padding: 0.375rem 0.875rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      
+      &.status-clickable {
+        cursor: pointer;
+        &:hover {
+          opacity: 0.85;
+          transform: scale(1.05);
+        }
+      }
+      
+      &.status-active {
+        background-color: rgba(40, 167, 69, 0.15);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+      }
+      
+      &.status-inactive {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+      }
+      
+      &.status-leave {
+        background-color: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+      }
+    }
+  }
+
+  // Button container - better mobile layout
+  .button-container {
+    margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    
+    @media (min-width: 480px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      min-height: 44px; // Touch-friendly height
+      gap: 0.25rem;
+      
+      // Button variants
+      &.history-button {
+        background-color: #e8f4ff;
+        color: #0066cc;
+        grid-column: span 2;
+        
+        @media (min-width: 480px) {
+          grid-column: span 1;
+        }
+        
+        &:hover {
+          background-color: #d1e9ff;
+          transform: translateY(-2px);
+        }
+      }
+      
+      &.edit-button {
+        background-color: var(--accent-color);
+        color: white;
+        
+        &:hover {
+          background-color: color-mix(in srgb, var(--accent-color), #000 10%);
+          transform: translateY(-2px);
+        }
+      }
+      
+      &.delete-button {
+        background-color: #ffeaea;
+        color: #d32f2f;
+        
+        &:hover {
+          background-color: #ffdada;
+          transform: translateY(-2px);
+        }
+      }
+      
+      // Icon styles
+      i {
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+      }
+      
+      // Hide text on very small screens, show icon only
+      @media (max-width: 359px) {
+        span {
+          display: none;
+        }
+        
+        i {
+          margin: 0;
+          font-size: 1.3rem;
+        }
+      }
+    }
+  }
+}
+
+// Files dropdown - better mobile positioning
+.files-dropdown {
+  position: relative;
+  display: flex;
+  
+  .btn {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f3f4f6;
+    color: #374151;
+    
+    &:hover {
+      background-color: #e5e7eb;
+    }
+  }
+  
+  &-content {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-secondary);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    max-height: 250px;
+    overflow-y: auto;
+    
+    @media (min-width: 480px) {
+      bottom: auto;
+      top: 100%;
+      left: 0;
+      right: auto;
+      min-width: 220px;
+    }
+    
+    .files-loading {
+      padding: 0.75rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .file-item {
+      padding: 0.625rem 0.75rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border-radius: 6px;
+      
+      &:hover {
+        background-color: var(--bg-primary);
+      }
+      
+      a {
+        color: var(--text-primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        
+        &:hover {
+          color: var(--accent-color);
+        }
+        
+        i {
+          flex-shrink: 0;
+        }
+      }
+    }
+  }
+}
+
+// Footer stats - centered on mobile
+.stats-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 16px;
+  border-top: 1px solid var(--border-color);
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: center;
+    gap: 3rem;
+  }
+  
+  .stat-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    
+    @media (min-width: 768px) {
+      font-size: 1.1rem;
+    }
+    
+    &::before {
+      content: '•';
+      color: var(--accent-color);
+      margin-right: 0.5rem;
+      font-weight: bold;
+    }
+  }
+}
+
+// Empty state
+.no-workers {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  
+  i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--border-color);
+  }
+  
+  p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  small {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+  }
+}
+
+// Responsive touch improvements
+@media (hover: none) {
+  .worker-card:hover {
+    transform: none;
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
+}
+
+// Loading skeleton for better UX
+.worker-card-skeleton {
+  background-color: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.25rem;
+  animation: pulse 1.5s infinite;
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+}

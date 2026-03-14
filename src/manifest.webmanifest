@@ -1,0 +1,24 @@
+{
+  "name": "United Services RH",
+  "short_name": "UnitedRH",
+  "description": "Gestion des Ressources Humaines",
+  "theme_color": "#CDA45E",
+  "background_color": "#000000",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/uploads/photos/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/uploads/photos/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+<!-- layout.html -->
+<div class="layout-container" [class.sidebar-collapsed]="isCollapsed">
+  <app-sidebar></app-sidebar>
+  <div class="main-container">
+    <app-navbar [isCollapsed]="isCollapsed" (toggleSidebar)="toggleSidebar()"></app-navbar>
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+  
+  <!-- Notification Prompt Overlay -->
+  <div *ngIf="showNotificationPrompt" class="notification-prompt-overlay">
+    <div class="notification-prompt">
+      <div class="prompt-header">
+        <i class="fas fa-bell notification-icon"></i>
+        <h3>Stay Updated!</h3>
+      </div>
+      <div class="prompt-body">
+        <p>Enable push notifications to get real-time updates about:</p>
+        <ul>
+          <li><i class="fas fa-check-circle"></i> New leave requests</li>
+          <li><i class="fas fa-check-circle"></i> Task assignments</li>
+          <li><i class="fas fa-check-circle"></i> Important announcements</li>
+          <li><i class="fas fa-check-circle"></i> Schedule changes</li>
+        </ul>
+        <p class="small-text">You can change this anytime in settings.</p>
+      </div>
+      <div class="prompt-actions">
+        <button class="btn-enable" (click)="enableNotifications()">
+          <i class="fas fa-bell"></i> Enable Notifications
+        </button>
+        <button class="btn-dismiss" (click)="dismissPrompt()">
+          Not Now
+        </button>
+      </div>
+      <div class="prompt-footer">
+        <a href="#" (click)="dismissPrompt(); $event.preventDefault()" class="dont-show-again">
+          <i class="fas fa-times"></i> Don't show again
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

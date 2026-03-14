@@ -1,0 +1,533 @@
+<div class="advance-management-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="page-title-container">
+        <h1 class="page-title">
+          <i class="fas fa-hand-holding-usd title-icon"></i>
+          Avances sur Salaire
+        </h1>
+        <p class="page-subtitle">Gérez les demandes d'avance financière des employés</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Dashboard -->
+  <div class="stats-section">
+    <div class="stats-container">
+      <div class="stats-grid">
+        <!-- Pending Advances -->
+        <div class="stat-card stat-pending">
+          <div class="stat-icon-container">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getPendingCount() }}</div>
+            <div class="stat-label">En attente</div>
+          </div>
+        </div>
+
+        <!-- Approved Advances -->
+        <div class="stat-card stat-approved">
+          <div class="stat-icon-container">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getApprovedCount() }}</div>
+            <div class="stat-label">Acceptées</div>
+          </div>
+        </div>
+
+        <!-- Refused Advances -->
+        <div class="stat-card stat-refused">
+          <div class="stat-icon-container">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getRefusedCount() }}</div>
+            <div class="stat-label">Refusées</div>
+          </div>
+        </div>
+
+        <!-- Total Amount -->
+        <div class="stat-card stat-amount">
+          <div class="stat-icon-container">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getTotalAmount() | currency:'TND':'symbol':'1.0-0' }}</div>
+            <div class="stat-label">Montant total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3 class="filters-title">
+        <i class="fas fa-sliders-h"></i>
+        Filtres
+      </h3>
+      <button class="btn-clear-filters" (click)="clearFilters()">
+        <i class="fas fa-times"></i> Réinitialiser
+      </button>
+    </div>
+
+    <div class="filters-grid">
+      <!-- Status Filter -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <i class="fas fa-filter"></i>
+          Statut
+        </label>
+        <mat-form-field appearance="outline" class="status-filter">
+          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="applyStatusFilter()" 
+                     aria-label="Filtrer par statut">
+            <mat-option value="ALL" class="filter-option">
+              <i class="fas fa-layer-group"></i>
+              <span>Tous les statuts</span>
+            </mat-option>
+            <mat-option value="EN_ATTENTE_ADMIN">
+              <i class="fas fa-clock"></i>
+              <span>En attente</span>
+            </mat-option>
+            <mat-option value="ACCEPTE">
+              <i class="fas fa-check-circle"></i>
+              <span>Acceptées</span>
+            </mat-option>
+            <mat-option value="REFUSE_ADMIN">
+              <i class="fas fa-times-circle"></i>
+              <span>Refusées</span>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Search Filter -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <i class="fas fa-search"></i>
+          Recherche
+        </label>
+        <div class="search-container">
+          <mat-form-field appearance="outline" class="search-filter">
+            <input matInput 
+                   (keyup)="applyNameFilter($event)" 
+                   placeholder="Nom employé, CIN, département..."
+                   #input
+                   aria-label="Rechercher une demande">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Table View -->
+  <div class="table-section desktop-view">
+    <div class="table-header">
+      <div class="table-title-section">
+        <h3 class="table-title">
+          <i class="fas fa-file-invoice-dollar"></i>
+          Demandes d'avance
+        </h3>
+        <span class="table-count">
+          {{ dataSource.filteredData.length }} demande{{ dataSource.filteredData.length !== 1 ? 's' : '' }}
+        </span>
+      </div>
+      <div class="table-actions">
+        <button class="btn-refresh" (click)="loadDemandes()" matTooltip="Actualiser">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container mat-elevation-z2">
+      <div class="table-scroll-container" #scrollContainer>
+        <table mat-table [dataSource]="dataSource" matSort class="advance-table">
+
+          <!-- Demandeur Column -->
+          <ng-container matColumnDef="demandeur">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="header-cell">
+              <div class="column-header">
+                <i class="fas fa-user-tie"></i>
+                Demandeur
+              </div>
+            </th>
+            <td mat-cell *matCellDef="let row" class="cell cell-demandeur">
+              <div class="demandeur-cell">
+                <div class="demandeur-name">{{ row.workerName }}</div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Montants Column -->
+          <ng-container matColumnDef="montants">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="header-cell">
+              <div class="column-header">
+                <i class="fas fa-money-check-alt"></i>
+                Montants
+              </div>
+            </th>
+            <td mat-cell *matCellDef="let row" class="cell cell-montants">
+              <div class="montants-container">
+                <div class="montant-item">
+                  <div class="montant-label">Demandé:</div>
+                  <div class="montant-value requested">{{ row.requestedAmount | currency:'TND':'symbol':'1.2-2' }}</div>
+                </div>
+                <div class="montant-item" *ngIf="row.adminResponseAmount">
+                  <div class="montant-label">Accordé:</div>
+                  <div class="montant-value approved">{{ row.adminResponseAmount | currency:'TND':'symbol':'1.2-2' }}</div>
+                </div>
+                <div class="difference-badge" *ngIf="row.adminResponseAmount && row.requestedAmount">
+                  {{ ((row.adminResponseAmount / row.requestedAmount) * 100) | number:'1.0-0' }}%
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Dates Column -->
+          <ng-container matColumnDef="dates">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="header-cell">
+              <div class="column-header">
+                <i class="fas fa-calendar-alt"></i>
+                Dates
+              </div>
+            </th>
+            <td mat-cell *matCellDef="let row" class="cell cell-dates">
+              <div class="dates-container">
+                <div class="date-item">
+                  <span class="date-label">
+                    <i class="fas fa-calendar-plus"></i>
+                    Demande:
+                  </span>
+                  <span class="date-value">{{ row.dateRequest | date: 'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="date-item" *ngIf="row.updatedAt">
+                  <span class="date-label">
+                    <i class="fas fa-clock"></i>
+                    Traitée:
+                  </span>
+                  <span class="date-value">{{ row.updatedAt | date: 'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Statut Column -->
+          <ng-container matColumnDef="statut">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="header-cell">
+              <div class="column-header">
+                <i class="fas fa-traffic-light"></i>
+                Statut
+              </div>
+            </th>
+            <td mat-cell *matCellDef="let row" class="cell cell-statut">
+              <div class="status-container">
+                <span class="status-badge" [ngClass]="'status-' + row.status.toLowerCase()">
+                  <i [class]="getStatusIcon(row.status)"></i>
+                  {{ getStatusText(row.status) }}
+                </span>
+                <div class="status-info" *ngIf="row.adminComment">
+                  <i class="fas fa-comment"></i>
+                  {{ row.adminComment | slice:0:50 }}{{ row.adminComment.length > 50 ? '...' : '' }}
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="header-cell">
+              <div class="column-header">
+                <i class="fas fa-cogs"></i>
+                Actions
+              </div>
+            </th>
+            <td mat-cell *matCellDef="let row" class="cell cell-actions">
+              <div class="actions-cell">
+                <div class="action-buttons">
+                  <button class="btn-action btn-view" 
+                          matTooltip="Voir détails employé"
+                          (click)="viewWorkerDetails(row.workerId)">
+                    <i class="fas fa-user-circle"></i>
+                  </button>
+                  
+                  <button class="btn-action btn-respond" 
+                          *ngIf="isAdmin && row.status === 'EN_ATTENTE_ADMIN'" 
+                          matTooltip="Répondre à la demande"
+                          (click)="openResponseModal(row)">
+                    <i class="fas fa-reply"></i>
+                  </button>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Header Row -->
+          <tr mat-header-row *matHeaderRowDef="['demandeur', 'montants', 'dates', 'statut', 'actions']" 
+              class="header-row"></tr>
+          
+          <!-- Data Rows -->
+          <tr mat-row *matRowDef="let row; columns: ['demandeur', 'montants', 'dates', 'statut', 'actions'];"
+              class="data-row"
+              [class.row-selected]="selectedRow === row"
+              (click)="selectRow(row)">
+          </tr>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="dataSource.filteredData.length === 0" class="no-data-message">
+        <div class="no-data-content">
+          <i class="fas fa-wallet"></i>
+          <h3>Aucune demande d'avance</h3>
+          <p>Aucune demande ne correspond à vos critères de recherche.</p>
+          <button class="btn-reset-filters" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Réinitialiser les filtres
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginator -->
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" 
+                   showFirstLastButtons 
+                   class="table-paginator">
+    </mat-paginator>
+  </div>
+
+    <!-- Mobile Cards View -->
+  <div class="cards-section mobile-view">
+    <div class="cards-header">
+      <h3 class="cards-title">Demandes d'avance</h3>
+      <button class="btn-mobile-filter" (click)="toggleMobileFilters()">
+        <i class="fas fa-filter"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Filters -->
+    <div class="mobile-filters-panel" *ngIf="showMobileFilters">
+      <div class="mobile-filter-group">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="applyStatusFilter()">
+            <mat-option value="ALL">Tous les statuts</mat-option>
+            <mat-option value="EN_ATTENTE_ADMIN">En attente</mat-option>
+            <mat-option value="ACCEPTE">Acceptées</mat-option>
+            <mat-option value="REFUSE_ADMIN">Refusées</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <input matInput 
+                 (keyup)="applyNameFilter($event)" 
+                 placeholder="Rechercher...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <button class="btn-close-filters" (click)="toggleMobileFilters()">
+          <i class="fas fa-times"></i> Fermer
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="mobile-cards-container">
+      <div *ngFor="let demande of dataSource.filteredData" class="advance-card">
+        <div class="card-header">
+          <div class="card-title">
+            <h4 class="demandeur-name">{{ demande.workerName }}</h4>
+          </div>
+          <div class="card-status">
+            <span class="status-badge" [ngClass]="'status-' + demande.status.toLowerCase()">
+              {{ getStatusText(demande.status) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Montants Section -->
+          <div class="card-section">
+            <div class="section-title">
+              <i class="fas fa-money-bill-wave"></i>
+              Montants
+            </div>
+            <div class="montants-grid">
+              <div class="montant-box requested">
+                <div class="montant-label">Demandé</div>
+                <div class="montant-value">{{ demande.requestedAmount | currency:'TND':'symbol':'1.0-0' }}</div>
+              </div>
+              <div class="montant-box approved" *ngIf="demande.adminResponseAmount">
+                <div class="montant-label">Accordé</div>
+                <div class="montant-value">{{ demande.adminResponseAmount | currency:'TND':'symbol':'1.0-0' }}</div>
+              </div>
+            </div>
+            <div class="percentage-badge" *ngIf="demande.adminResponseAmount && demande.requestedAmount">
+              {{ ((demande.adminResponseAmount / demande.requestedAmount) * 100) | number:'1.0-0' }}% accordé
+            </div>
+          </div>
+
+          <!-- Dates Section -->
+          <div class="card-section">
+            <div class="section-title">
+              <i class="fas fa-calendar"></i>
+              Dates
+            </div>
+            <div class="dates-list">
+              <div class="date-item">
+                <i class="fas fa-calendar-plus"></i>
+                <span class="date-label">Demande: </span>
+                <span class="date-value">{{ demande.dateRequest | date: 'dd/MM/yy' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment Section -->
+          <div class="card-section" *ngIf="demande.adminComment">
+            <div class="section-title">
+              <i class="fas fa-comment"></i>
+              Commentaire
+            </div>
+            <div class="comment-text">
+              {{ demande.adminComment }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="card-actions">
+            <button class="btn-mobile-action btn-view" (click)="viewWorkerDetails(demande.workerId)">
+              <i class="fas fa-user"></i> Détails
+            </button>
+            
+            <button class="btn-mobile-action btn-respond" 
+                    *ngIf="isAdmin && demande.status === 'en_attente_admin'" 
+                    (click)="openResponseModal(demande)">
+              <i class="fas fa-reply"></i> Répondre
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Empty State -->
+      <div *ngIf="dataSource.filteredData.length === 0" class="empty-state">
+        <div class="empty-content">
+          <i class="fas fa-wallet"></i>
+          <h3>Aucune demande</h3>
+          <p>Modifiez vos filtres pour afficher les résultats</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Modals -->
+<app-worker-details-modal 
+  *ngIf="isWorkerModalVisible" 
+  [worker]="selectedWorker" 
+  (close)="closeWorkerModal()">
+</app-worker-details-modal>
+
+<!-- Admin Response Modal -->
+<div class="modal fade" id="adminResponseModal" tabindex="-1" aria-labelledby="adminResponseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="adminResponseModalLabel">
+          <i class="fas fa-hand-holding-usd"></i>
+          Traiter la Demande d'Avance
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form #adminForm="ngForm" novalidate>
+        <div class="modal-body">
+          <!-- Demandeur Info -->
+          <div class="demandeur-info-section">
+            <div class="info-header">
+              <i class="fas fa-user-tie"></i>
+              <h6>Informations du demandeur</h6>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Nom complet:</span>
+                <span class="info-value">{{ selectedDemande?.workerName }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Montants Section -->
+          <div class="montants-section">
+            <div class="montants-header">
+              <i class="fas fa-money-check-alt"></i>
+              <h6>Montants</h6>
+            </div>
+            <div class="montants-grid">
+              <div class="montant-card requested">
+                <div class="montant-card-header">
+                  <i class="fas fa-hand-point-up"></i>
+                  <span>Montant demandé</span>
+                </div>
+                <div class="montant-card-value">
+                  {{ selectedDemande?.requestedAmount | currency:'TND':'symbol':'1.2-2' }}
+                </div>
+              </div>
+              
+              <div class="montant-card approved">
+                <div class="montant-card-header">
+                  <i class="fas fa-hand-holding"></i>
+                  <span>Montant à accorder</span>
+                </div>
+                <div class="montant-input-container">
+                  <span class="currency-prefix">TND</span>
+                  <input type="number" 
+                  id="adminResponseAmount" 
+                  class="form-control montant-input" 
+                  [(ngModel)]="adminResponseAmount" 
+                  name="adminResponseAmount" 
+                  placeholder="0.00"
+                  min="0"
+                  [max]="selectedDemande?.requestedAmount || 0">
+                </div>
+                <div class="montant-percentage" *ngIf="selectedDemande?.requestedAmount && adminResponseAmount">
+                  {{ calculatePercentage() | number:'1.0-0' }}% du montant demandé
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment Section -->
+          <div class="comment-section">
+            <div class="comment-header">
+              <i class="fas fa-comment-dots"></i>
+              <h6>Commentaire (Optionnel)</h6>
+            </div>
+            <textarea id="adminComment" 
+                      class="form-control comment-textarea" 
+                      [(ngModel)]="adminComment" 
+                      name="adminComment" 
+                      rows="4"
+                      placeholder="Ajoutez un commentaire pour justifier votre décision..."></textarea>
+          </div>
+
+          <!-- Warning Message -->
+          <div class="alert alert-warning mt-3" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Important:</strong> Cette action sera enregistrée et une notification sera envoyée à l'employé.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i> Annuler
+          </button>
+          <button type="button" class="btn btn-success" [disabled]="!adminForm.valid" (click)="onAdminSubmit('accepte')">
+            <i class="fas fa-check-circle"></i> Accepter
+          </button>
+          <button type="button" class="btn btn-danger" (click)="onAdminSubmit('refuse_admin')">
+            <i class="fas fa-times-circle"></i> Refuser
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

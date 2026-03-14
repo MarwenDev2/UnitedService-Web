@@ -1,0 +1,16 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ title }}</h2>
+      <button class="close-button" (click)="onClose()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>{{ message }}</p>
+      <textarea *ngIf="showComment" [(ngModel)]="comment" placeholder="Add a comment..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="onClose()">{{ cancelButtonText }}</button>
+      <button class="btn btn-primary" (click)="onConfirm()">{{ confirmButtonText }}</button>
+    </div>
+  </div>
+</div>

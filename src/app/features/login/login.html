@@ -1,0 +1,67 @@
+<div class="login-container">
+  <div class="login-box">
+    <div class="logo-container">
+      <img src="assets/logo.png" alt="United Services Logo">
+    </div>
+    <h2>Welcome Back!</h2>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="e.g., name@example.com">
+        <div *ngIf="loginForm.get('email')?.invalid && (loginForm.get('email')?.dirty || loginForm.get('email')?.touched)" class="error-text">
+          <small *ngIf="loginForm.get('email')?.errors?.['required']">Email is required.</small>
+          <small *ngIf="loginForm.get('email')?.errors?.['email']">Please enter a valid email address.</small>
+        </div>
+      </div>
+      
+      <div class="input-group">
+        <label for="password">
+          <i class="fas fa-lock"></i> Password
+        </label>
+        <div class="input-wrapper">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" 
+                 formControlName="password" placeholder="Enter your password">
+          <span class="input-icon">
+            <i class="fas fa-key"></i>
+          </span>
+          <button type="button" class="password-toggle" 
+                  (click)="showPassword = !showPassword"
+                  [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div *ngIf="loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)" 
+             class="error-text">
+          <small>
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+          </small>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <div class="remember-me">
+          <input type="checkbox" id="rememberMe" formControlName="rememberMe">
+          <label for="rememberMe">Remember me</label>
+          <small class="hint">Stay logged in for 30 days</small>
+        </div>
+        <a href="#" class="forgot-password">Forgot Password?</a>
+      </div>
+
+       <!-- Error Message -->
+      <div *ngIf="loginError" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="login-btn" [disabled]="!loginForm.valid || isLoading">
+        <span *ngIf="isLoading" class="spinner"></span>
+        <span *ngIf="!isLoading">
+          <i class="fas fa-sign-in-alt btn-icon"></i>
+          Sign In
+        </span>
+      </button>
+    </form>
+  </div>
+</div>

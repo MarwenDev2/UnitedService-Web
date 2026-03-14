@@ -1,0 +1,385 @@
+<div class="mission-request-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <i class="fas fa-plane-departure header-icon"></i>
+        <div class="title-text">
+          <h1>Nouvel Ordre de Mission</h1>
+          <p>Créez une demande de mission pour un ou plusieurs employés</p>
+        </div>
+      </div>
+      <div class="header-stats" *ngIf="selectedWorkers.length > 0">
+        <div class="stat-badge">
+          <i class="fas fa-users"></i>
+          <span>{{ selectedWorkers.length }} employé{{ selectedWorkers.length !== 1 ? 's' : '' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Indicator -->
+  <div class="progress-indicator" *ngIf="isFormVisible">
+    <div class="progress-steps">
+      <div class="step" [class.active]="selectedWorkers.length > 0">
+        <div class="step-circle">1</div>
+        <span class="step-label">Employés</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="selectedWorkers.length > 0 && missionForm.get('destination')?.value">
+        <div class="step-circle">2</div>
+        <span class="step-label">Détails</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="missionForm.valid">
+        <div class="step-circle">3</div>
+        <span class="step-label">Validation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" *ngIf="isFormVisible">
+    <!-- Left Column - Form & Workers -->
+    <div class="content-column">
+      <!-- Selected Workers -->
+      <div class="card workers-card" *ngIf="selectedWorkers.length > 0">
+        <div class="card-header">
+          <h3><i class="fas fa-user-group"></i> Employés sélectionnés</h3>
+          <button class="btn-add" (click)="addWorkerByCin()">
+            <i class="fas fa-plus"></i> Ajouter
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="workers-list">
+            <div *ngFor="let worker of selectedWorkers; let i = index" class="worker-item">
+              <div class="worker-avatar">
+                {{ getInitials(worker.name) }}
+              </div>
+              <div class="worker-details">
+                <div class="worker-name">{{ worker.name }}</div>
+                <div class="worker-info">
+                  <span class="info-chip">
+                    <i class="fas fa-id-card"></i> {{ worker.cin }}
+                  </span>
+                  <span class="info-chip" *ngIf="worker.department">
+                    <i class="fas fa-building"></i> {{ worker.department }}
+                  </span>
+                </div>
+              </div>
+              <button class="btn-remove" (click)="removeWorker(i)" title="Retirer">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Form -->
+      <div class="card form-card">
+        <div class="card-header">
+          <h3><i class="fas fa-map-location-dot"></i> Détails de la mission</h3>
+          <div class="form-status" *ngIf="selectedWorkers.length === 0">
+            <i class="fas fa-info-circle"></i>
+            <span>Ajoutez d'abord des employés</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="missionForm" (ngSubmit)="onSubmit()">
+            <!-- Destination -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-location-dot"></i>
+                Destination
+                <span class="required">*</span>
+              </label>
+              <mat-form-field appearance="outline">
+                <mat-label>Ville, client ou lieu</mat-label>
+                <input matInput 
+                       formControlName="destination" 
+                       [attr.disabled]="selectedWorkers.length === 0">
+                <mat-icon matSuffix>place</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Dates -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <i class="fas fa-plane-departure"></i>
+                  Date de départ
+                  <span class="required">*</span>
+                </label>
+                <mat-form-field appearance="outline">
+                  <mat-label>JJ/MM/AAAA</mat-label>
+                  <input matInput 
+                         [matDatepicker]="startPicker" 
+                         formControlName="missionDate"
+                         [attr.disabled]="selectedWorkers.length === 0">
+                  <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <i class="fas fa-plane-arrival"></i>
+                  Date de retour
+                  <span class="required">*</span>
+                </label>
+                <mat-form-field appearance="outline">
+                  <mat-label>JJ/MM/AAAA</mat-label>
+                  <input matInput 
+                         [matDatepicker]="endPicker" 
+                         formControlName="endDate"
+                         [attr.disabled]="selectedWorkers.length === 0">
+                  <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #endPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Duration Display -->
+            <div class="duration-display" *ngIf="missionForm.get('missionDate')?.value && missionForm.get('endDate')?.value">
+              <div class="duration-card">
+                <i class="fas fa-calendar-days"></i>
+                <div class="duration-info">
+                  <span class="duration-label">Durée totale</span>
+                  <span class="duration-value">{{ calculateDuration() }} jour(s)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" (click)="resetCin()">
+                <i class="fas fa-eraser"></i> Réinitialiser
+              </button>
+              <button type="submit" 
+                      class="btn-primary" 
+                      [disabled]="missionForm.invalid || selectedWorkers.length === 0">
+                <i class="fas fa-paper-plane"></i>
+                <span>Envoyer la demande</span>
+                <i class="fas fa-arrow-right" *ngIf="!missionForm.invalid && selectedWorkers.length > 0"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Summary -->
+    <div class="sidebar-column" *ngIf="selectedWorkers.length > 0">
+      <div class="summary-card">
+        <div class="summary-header">
+          <i class="fas fa-clipboard-check"></i>
+          <h4>Récapitulatif</h4>
+        </div>
+        <div class="summary-content">
+          <!-- Selected Workers Summary -->
+          <div class="summary-section">
+            <h5>Employés sélectionnés</h5>
+            <div class="workers-summary">
+              <div *ngFor="let worker of selectedWorkers" class="summary-worker">
+                <div class="summary-avatar">{{ getInitials(worker.name) }}</div>
+                <div class="summary-details">
+                  <div>{{ worker.name }}</div>
+                  <small>{{ worker.cin }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mission Details Summary -->
+          <div class="summary-section" *ngIf="missionForm.get('destination')?.value">
+            <h5>Détails mission</h5>
+            <div class="details-grid">
+              <div class="detail-item">
+                <i class="fas fa-location-dot"></i>
+                <div>
+                  <div class="detail-label">Destination</div>
+                  <div class="detail-value">{{ missionForm.get('destination')?.value }}</div>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="missionForm.get('missionDate')?.value">
+                <i class="fas fa-calendar-arrow-up"></i>
+                <div>
+                  <div class="detail-label">Départ</div>
+                  <div class="detail-value">{{ missionForm.get('missionDate')?.value | date: 'dd/MM/yyyy' }}</div>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="missionForm.get('endDate')?.value">
+                <i class="fas fa-calendar-arrow-down"></i>
+                <div>
+                  <div class="detail-label">Retour</div>
+                  <div class="detail-value">{{ missionForm.get('endDate')?.value | date: 'dd/MM/yyyy' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions">
+            <button class="quick-btn" (click)="addWorkerByCin()">
+              <i class="fas fa-user-plus"></i>
+              Ajouter employé
+            </button>
+            <button class="quick-btn" (click)="openCinPopup()">
+              <i class="fas fa-search"></i>
+              Rechercher par CIN
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile View -->
+  <!-- Mobile View -->
+<div class="mobile-container" *ngIf="isFormVisible">
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <div class="mobile-title">
+      <i class="fas fa-plane-departure"></i>
+      <div>
+        <h2>Nouvelle mission</h2>
+        <p class="mobile-subtitle">Étape {{ getCurrentStep() }} sur 3</p>
+      </div>
+    </div>
+    <div class="mobile-stats" *ngIf="selectedWorkers.length > 0">
+      <div class="mobile-badge">
+        {{ selectedWorkers.length }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Progress -->
+  <div class="mobile-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width]="getProgressWidth() + '%'"></div>
+      </div>
+      <div class="progress-labels">
+        <span [class.active]="selectedWorkers.length > 0">Employés</span>
+        <span [class.active]="selectedWorkers.length > 0 && missionForm.get('destination')?.value">Détails</span>
+        <span [class.active]="missionForm.valid">Validation</span>
+      </div>
+    </div>
+
+    <!-- Mobile Content -->
+    <div class="mobile-content">
+      <!-- Selected Workers -->
+      <div class="mobile-card" *ngIf="selectedWorkers.length > 0">
+        <div class="card-header">
+          <h4>Employés ({{ selectedWorkers.length }})</h4>
+          <button class="mobile-add-btn" (click)="addWorkerByCin()">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="mobile-workers">
+            <div *ngFor="let worker of selectedWorkers; let i = index" class="mobile-worker">
+              <div class="worker-avatar-sm">{{ getInitials(worker.name) }}</div>
+              <div class="worker-info-sm">
+                <div class="worker-name">{{ worker.name }}</div>
+                <div class="worker-cin">{{ worker.cin }}</div>
+              </div>
+              <button class="remove-btn-sm" (click)="removeWorker(i)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Form -->
+      <div class="mobile-card">
+        <div class="card-header">
+          <h4>Détails mission</h4>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="missionForm" (ngSubmit)="onSubmit()">
+            <!-- Destination -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="fas fa-location-dot"></i>
+                Destination
+                <span class="required">*</span>
+              </label>
+              <mat-form-field appearance="outline" class="mobile-field">
+                <input matInput 
+                      formControlName="destination" 
+                      placeholder="Ex: Paris, Client XYZ"
+                      [attr.disabled]="selectedWorkers.length === 0">
+                <mat-icon matSuffix>location_on</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Dates - Stacked Vertically -->
+            <div class="mobile-dates-stacked">
+              <!-- Date de départ -->
+              <div class="date-field">
+                <label class="form-label">
+                  <i class="fas fa-plane-departure"></i>
+                  Date de départ
+                  <span class="required">*</span>
+                </label>
+                <mat-form-field appearance="outline" class="mobile-field">
+                  <mat-label>JJ/MM/AAAA</mat-label>
+                  <input matInput 
+                        [matDatepicker]="mobileStartPicker" 
+                        formControlName="missionDate"
+                        [attr.disabled]="selectedWorkers.length === 0">
+                  <mat-datepicker-toggle matIconSuffix [for]="mobileStartPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #mobileStartPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <!-- Date de retour -->
+              <div class="date-field">
+                <label class="form-label">
+                  <i class="fas fa-plane-arrival"></i>
+                  Date de retour
+                  <span class="required">*</span>
+                </label>
+                <mat-form-field appearance="outline" class="mobile-field">
+                  <mat-label>JJ/MM/AAAA</mat-label>
+                  <input matInput 
+                        [matDatepicker]="mobileEndPicker" 
+                        formControlName="endDate"
+                        [attr.disabled]="selectedWorkers.length === 0">
+                  <mat-datepicker-toggle matIconSuffix [for]="mobileEndPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #mobileEndPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="mobile-duration" *ngIf="missionForm.get('missionDate')?.value && missionForm.get('endDate')?.value">
+              <div class="duration-content">
+                <i class="fas fa-clock"></i>
+                <div class="duration-text">
+                  <div class="duration-label">Durée totale</div>
+                  <div class="duration-value">{{ calculateDuration() }} jour(s)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mobile-actions">
+              <button type="button" class="mobile-btn outline" (click)="resetCin()">
+                <i class="fas fa-rotate-left"></i>
+                Réinitialiser
+              </button>
+              <button type="submit" 
+                      class="mobile-btn primary" 
+                      [disabled]="missionForm.invalid || selectedWorkers.length === 0">
+                <i class="fas fa-paper-plane"></i>
+                Envoyer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

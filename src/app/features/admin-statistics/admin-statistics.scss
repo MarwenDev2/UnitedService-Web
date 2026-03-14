@@ -1,0 +1,74 @@
+.stats-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .stats-card {
+    background-color: var(--bg-primary);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+  
+    mat-card-header {
+      margin-bottom: 20px;
+  
+      mat-card-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--accent-color);
+        text-align: center;
+      }
+    }
+  
+    .total-label {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+    }
+  
+    .charts-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+  
+      @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+      }
+  
+      .chart-item {
+        background-color: var(--bg-secondary);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.3s ease;
+  
+        &:hover {
+          transform: translateY(-5px);
+        }
+  
+        canvas {
+          width: 100% !important;
+          height: auto !important;
+        }
+      }
+    }
+  
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.4s var(--transition-timing) forwards;
+  }

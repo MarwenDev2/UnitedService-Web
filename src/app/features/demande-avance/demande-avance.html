@@ -1,0 +1,304 @@
+<div class="advance-request-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="page-title-container">
+        <h1 class="page-title">
+          <i class="fas fa-hand-holding-usd title-icon"></i>
+          Demande d'Avance sur Salaire
+        </h1>
+        <p class="page-subtitle">Soumettez votre demande d'avance financière</p>
+      </div>
+      
+      <!-- Progress Steps -->
+      <div class="progress-steps">
+        <div class="step active">
+          <div class="step-number">1</div>
+          <div class="step-label">Identification</div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-label">Montant</div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-label">Confirmation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Form Section -->
+  <div class="form-section">
+    <div class="form-container">
+      <!-- Deadline Alert -->
+      <div class="deadline-alert" *ngIf="isPastDeadline">
+        <div class="alert-content">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div class="alert-text">
+            <strong>Attention:</strong> Les demandes d'avance ne sont plus acceptées après le 15 de chaque mois.
+            Votre demande sera traitée le mois prochain.
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="form-card">
+        <div class="form-header">
+          <div class="form-title">
+            <h3>
+              <i class="fas fa-file-contract"></i>
+              Nouvelle Demande d'Avance
+            </h3>
+            <p class="form-subtitle">Remplissez les informations ci-dessous pour soumettre votre demande</p>
+          </div>
+          <div class="form-indicator">
+            <div class="indicator-dot"></div>
+            <span>En cours de saisie</span>
+          </div>
+        </div>
+
+        <form #demandeForm="ngForm" (ngSubmit)="onSubmit(demandeForm)" novalidate>
+          <div class="form-body">
+            <!-- CIN Input Section -->
+            <div class="form-group">
+              <div class="form-group-header">
+                <label class="form-label" for="cin">
+                  <i class="fas fa-id-card"></i>
+                  CIN de l'employé
+                </label>
+                <span class="input-required">* Requis</span>
+              </div>
+              
+              <div class="input-container">
+                <div class="input-with-prefix">
+                  <span class="input-prefix">
+                    <i class="fas fa-user"></i>
+                  </span>
+                  <input type="text" 
+                         class="form-input" 
+                         id="cin" 
+                         name="cin"
+                         [(ngModel)]="demande.cin" 
+                         (ngModelChange)="onCinChange()" 
+                         #cinInput="ngModel"
+                         required 
+                         minlength="7" 
+                         maxlength="8"
+                         placeholder="Entrez votre numéro CIN"
+                         [ngClass]="{ 'input-error': cinInput.invalid && (cinInput.dirty || cinInput.touched) }">
+                </div>
+                
+                <!-- CIN Validation Messages -->
+                <div class="validation-messages" *ngIf="cinInput.invalid && (cinInput.dirty || cinInput.touched)">
+                  <div class="error-message" *ngIf="cinInput.errors?.['required']">
+                    <i class="fas fa-times-circle"></i> Le CIN est requis
+                  </div>
+                  <div class="error-message" *ngIf="cinInput.errors?.['minlength'] || cinInput.errors?.['maxlength']">
+                    <i class="fas fa-times-circle"></i> Le CIN doit contenir entre 7 et 8 caractères
+                  </div>
+                </div>
+                
+                <!-- Worker Found Success -->
+                <div class="success-message animate__animated animate__fadeIn" *ngIf="workerName && !cinError">
+                  <div class="success-content">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="success-text">
+                      <strong>Employé identifié:</strong> {{ workerName }}
+                      <div class="success-details" *ngIf="workerSalary">
+                        Salaire actuel: {{ workerSalary | currency:'TND':'symbol':'1.0-0' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- CIN Error -->
+                <div class="error-message animate__animated animate__fadeIn" *ngIf="cinError">
+                  <i class="fas fa-exclamation-circle"></i> {{ cinError }}
+                </div>
+                
+                <!-- CIN Help Text -->
+                <div class="help-text">
+                  <i class="fas fa-info-circle"></i>
+                  Votre numéro de CIN doit contenir entre 7 et 8 caractères
+                </div>
+              </div>
+            </div>
+
+            <!-- Amount Input Section -->
+            <div class="form-group">
+              <div class="form-group-header">
+                <label class="form-label" for="requestedAmount">
+                  <i class="fas fa-money-bill-wave"></i>
+                  Montant demandé
+                </label>
+                <span class="input-required">* Requis</span>
+              </div>
+              
+              <div class="input-container">
+                <div class="input-with-prefix">
+                  <span class="input-prefix">
+                    <span class="currency-symbol">TND</span>
+                  </span>
+                  <input type="number" 
+                         class="form-input" 
+                         id="requestedAmount" 
+                         name="requestedAmount"
+                         [(ngModel)]="demande.requestedAmount" 
+                         #amountInput="ngModel"
+                         required 
+                         min="1"
+                         [max]="workerSalary || 10000"
+                         placeholder="0.00"
+                         [ngClass]="{ 'input-error': amountInput.invalid && (amountInput.dirty || amountInput.touched) }">
+                </div>
+                
+                <!-- Amount Validation Messages -->
+                <div class="validation-messages" *ngIf="amountInput.invalid && (amountInput.dirty || amountInput.touched)">
+                  <div class="error-message" *ngIf="amountInput.errors?.['required']">
+                    <i class="fas fa-times-circle"></i> Le montant est requis
+                  </div>
+                  <div class="error-message" *ngIf="amountInput.errors?.['min']">
+                    <i class="fas fa-times-circle"></i> Le montant doit être positif
+                  </div>
+                  <div class="error-message" *ngIf="amountInput.errors?.['max']">
+                    <i class="fas fa-times-circle"></i> Le montant ne peut pas dépasser votre salaire
+                  </div>
+                </div>
+                
+                <!-- Amount Slider (Mobile) -->
+                <div class="amount-slider" *ngIf="workerSalary">
+                  <div class="slider-header">
+                    <span>Glissez pour ajuster le montant</span>
+                    <span class="slider-value">{{ (demande.requestedAmount || 0) | currency:'TND':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <input type="range" 
+                         class="form-range" 
+                         min="1" 
+                         [max]="workerSalary" 
+                         step="100"
+                         [value]="demande.requestedAmount || 0"
+                         (input)="onAmountSliderChange($event)">
+                  <div class="slider-labels">
+                    <span>1 TND</span>
+                    <span>{{ workerSalary | currency:'TND':'symbol':'1.0-0' }}</span>
+                  </div>
+                </div>
+                
+                <!-- Amount Help Text -->
+                <div class="help-text">
+                  <i class="fas fa-info-circle"></i>
+                  <span *ngIf="workerSalary">
+                    Vous pouvez demander jusqu'à {{ workerSalary | currency:'TND':'symbol':'1.0-0' }} (100% de votre salaire)
+                  </span>
+                  <span *ngIf="!workerSalary">
+                    Le montant maximum sera défini après identification
+                  </span>
+                </div>
+                
+                <!-- Percentage Bar -->
+                <div class="percentage-bar" *ngIf="workerSalary && demande.requestedAmount">
+                  <div class="percentage-label">
+                    <span>{{ calculatePercentage() | number:'1.0-0' }}% de votre salaire</span>
+                    <span>{{ calculatePercentage() | number:'1.0-0' }}%</span>
+                  </div>
+                  <div class="percentage-track">
+                    <div class="percentage-fill" [style.width.%]="calculatePercentage()"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Amount Suggestions -->
+            <div class="quick-amounts" *ngIf="workerSalary">
+              <div class="quick-amounts-header">
+                <i class="fas fa-bolt"></i>
+                <span>Montants suggérés</span>
+              </div>
+              <div class="quick-amount-buttons">
+                <button type="button" 
+                        class="quick-amount-btn" 
+                        *ngFor="let percent of [25, 50, 75]"
+                        (click)="setAmountByPercentage(percent)">
+                  {{ percent }}%
+                  <span class="amount-value">{{ (workerSalary * percent / 100) | currency:'TND':'symbol':'1.0-0' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="summary-section" *ngIf="demande.requestedAmount && workerSalary">
+              <div class="summary-header">
+                <i class="fas fa-calculator"></i>
+                <span>Récapitulatif de la demande</span>
+              </div>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <div class="summary-label">Employé</div>
+                  <div class="summary-value">{{ workerName }}</div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-label">Salaire mensuel</div>
+                  <div class="summary-value">{{ workerSalary | currency:'TND':'symbol':'1.2-2' }}</div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-label">Montant demandé</div>
+                  <div class="summary-value amount-requested">
+                    {{ (demande.requestedAmount || 0) | currency:'TND':'symbol':'1.2-2' }}
+                  </div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-label">Pourcentage</div>
+                  <div class="summary-value percentage-value">
+                    {{ calculatePercentage() | number:'1.1-1' }}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Footer -->
+          <div class="form-footer">
+            <div class="form-actions">
+              <button type="button" class="btn-cancel" routerLink="/dashboard">
+                <i class="fas fa-times"></i>
+                Annuler
+              </button>
+              <button type="submit" 
+                      class="btn-submit" 
+                      [disabled]="demandeForm.invalid || !workerId || isPastDeadline"
+                      [ngClass]="{ 'btn-disabled': demandeForm.invalid || !workerId || isPastDeadline }">
+                <div class="submit-content">
+                  <i class="fas fa-paper-plane"></i>
+                  <span>Soumettre la demande</span>
+                  <span class="submit-info" *ngIf="isPastDeadline">
+                    (Disponible à partir du 1er du mois prochain)
+                  </span>
+                </div>
+                <div class="submit-loader" *ngIf="false">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+              </button>
+            </div>
+            
+            <!-- Form Status -->
+            <div class="form-status">
+              <div class="status-item" *ngIf="!workerId">
+                <i class="fas fa-circle status-pending"></i>
+                <span>En attente d'identification</span>
+              </div>
+              <div class="status-item" *ngIf="workerId && demandeForm.valid">
+                <i class="fas fa-circle status-ready"></i>
+                <span>Prêt à soumettre</span>
+              </div>
+              <div class="status-item" *ngIf="isPastDeadline">
+                <i class="fas fa-circle status-warning"></i>
+                <span>Période de demande fermée</span>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

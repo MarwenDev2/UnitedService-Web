@@ -1,0 +1,252 @@
+<div class="leave-request-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="page-title-container">
+        <h1 class="page-title">
+          <i class="fas fa-calendar-plus title-icon"></i>
+          Demande de Congé
+        </h1>
+        <p class="page-subtitle" *ngIf="workerName">{{ workerName }}</p>
+        <p class="page-subtitle" *ngIf="!workerName">Sélectionnez un employé pour commencer</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Employee Selection Card -->
+    <div class="employee-card" *ngIf="!isWorkerSelected">
+      <div class="card-content">
+        <div class="employee-icon">
+          <i class="fas fa-user-clock"></i>
+        </div>
+        <div class="employee-info">
+          <h3 class="card-title">Identification nécessaire</h3>
+          <p class="card-description">Veuillez identifier l'employé pour pouvoir soumettre une demande de congé.</p>
+        </div>
+        <button class="btn-select-employee" (click)="openCinPopup()">
+          <i class="fas fa-id-card"></i>
+          Saisir le CIN
+        </button>
+      </div>
+    </div>
+
+    <!-- Request Form -->
+    <div class="form-section" *ngIf="isWorkerSelected">
+      <div class="form-header">
+        <div class="form-title-section">
+          <h2 class="form-title">
+            <i class="fas fa-file-alt"></i>
+            Formulaire de demande
+          </h2>
+          <div class="employee-badge">
+            <i class="fas fa-user-check"></i>
+            <span>{{ workerName }}</span>
+          </div>
+        </div>
+        <button class="btn-change-employee" (click)="resetCin()">
+          <i class="fas fa-exchange-alt"></i>
+          Changer d'employé
+        </button>
+      </div>
+
+      <form [formGroup]="demandeForm" (ngSubmit)="onSubmit()" class="request-form">
+        <!-- Form Grid -->
+        <div class="form-grid">
+          <!-- Leave Type -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-tag"></i>
+              Type de congé
+              <span class="required">*</span>
+            </label>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-select formControlName="type" required>
+                <mat-option *ngFor="let type of typesConge" [value]="type">
+                  <div class="option-content">
+                    <i [class]="getTypeIcon(type)"></i>
+                    <span>{{ type }}</span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="demandeForm.get('type')?.hasError('required')">
+                Le type de congé est requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Start Date -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-plane-departure"></i>
+              Date de début
+              <span class="required">*</span>
+            </label>
+            <mat-form-field appearance="outline" class="form-field">
+              <input matInput [matDatepicker]="startPicker" formControlName="startDate" required>
+              <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+              <mat-datepicker #startPicker></mat-datepicker>
+              <mat-error *ngIf="demandeForm.get('startDate')?.hasError('required')">
+                La date de début est requise
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- End Date -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-plane-arrival"></i>
+              Date de fin
+              <span class="required">*</span>
+            </label>
+            <mat-form-field appearance="outline" class="form-field">
+              <input matInput [matDatepicker]="endPicker" formControlName="endDate" required>
+              <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+              <mat-datepicker #endPicker></mat-datepicker>
+              <mat-error *ngIf="demandeForm.get('endDate')?.hasError('required')">
+                La date de fin est requise
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Duration Display -->
+          <div class="form-group duration-display" *ngIf="demandeForm.get('startDate')?.value && demandeForm.get('endDate')?.value">
+            <label class="form-label">
+              <i class="fas fa-calendar-alt"></i>
+              Durée
+            </label>
+            <div class="duration-value">
+              {{ calculateDuration() }} jour(s)
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason Field -->
+        <div class="form-group full-width">
+          <label class="form-label">
+            <i class="fas fa-comment-dots"></i>
+            Motif de la demande
+            <span class="required">*</span>
+          </label>
+          <mat-form-field appearance="outline" class="form-field">
+            <textarea matInput 
+                     formControlName="reason" 
+                     required
+                     rows="4"
+                     placeholder="Veuillez décrire la raison de votre demande de congé..."
+                     maxlength="500"></textarea>
+            <mat-hint align="end">{{ demandeForm.get('reason')?.value?.length || 0 }}/500</mat-hint>
+            <mat-error *ngIf="demandeForm.get('reason')?.hasError('required')">
+              Le motif est requis
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Attachment Section -->
+        <div class="attachment-section">
+          <div class="attachment-header">
+            <div class="attachment-title">
+              <i class="fas fa-paperclip"></i>
+              <h4>Pièce jointe (Optionnel)</h4>
+            </div>
+            <span class="attachment-hint">PDF, DOC, JPG, PNG (Max 5MB)</span>
+          </div>
+          
+          <div class="attachment-actions">
+            <div class="file-upload-container">
+              <button type="button" 
+                      class="btn-upload" 
+                      (click)="fileInput.click()"
+                      [disabled]="!isWorkerSelected">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Téléverser un document</span>
+              </button>
+              <input type="file" 
+                     #fileInput 
+                     (change)="onFileChange($event)" 
+                     style="display: none;" 
+                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+              
+              <div class="file-info" *ngIf="demandeForm.get('attachment')?.value">
+                <div class="file-details">
+                  <i class="fas fa-file"></i>
+                  <div class="file-name">{{ demandeForm.get('attachment')?.value.name }}</div>
+                  <div class="file-size">{{ formatFileSize(demandeForm.get('attachment')?.value.size) }}</div>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="upload-tips">
+              <p class="tip-title">
+                <i class="fas fa-lightbulb"></i>
+                Conseils :
+              </p>
+              <ul class="tip-list">
+                <li>Certificat médical pour congé maladie</li>
+                <li>Document justificatif pour congé exceptionnel</li>
+                <li>Attestation pour congé maternité</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation Summary -->
+        <div class="validation-summary" *ngIf="demandeForm.invalid && (demandeForm.dirty || demandeForm.touched)">
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Veuillez corriger les erreurs dans le formulaire avant de soumettre.
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" 
+                  class="btn-cancel" 
+                  mat-stroked-button
+                  (click)="resetCin()">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+          
+          <button type="submit" 
+                  class="btn-submit" 
+                  mat-raised-button
+                  [disabled]="demandeForm.invalid || !isWorkerSelected">
+            <i class="fas fa-paper-plane"></i>
+            Soumettre la demande
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick Guide (Mobile) -->
+    <div class="quick-guide mobile-view" *ngIf="isWorkerSelected">
+      <div class="guide-header">
+        <i class="fas fa-info-circle"></i>
+        <h4>Guide rapide</h4>
+      </div>
+      <div class="guide-steps">
+        <div class="step">
+          <span class="step-number">1</span>
+          <span class="step-text">Remplissez le formulaire</span>
+        </div>
+        <div class="step">
+          <span class="step-number">2</span>
+          <span class="step-text">Vérifiez les dates</span>
+        </div>
+        <div class="step">
+          <span class="step-number">3</span>
+          <span class="step-text">Ajoutez un justificatif si nécessaire</span>
+        </div>
+        <div class="step">
+          <span class="step-number">4</span>
+          <span class="step-text">Soumettez votre demande</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

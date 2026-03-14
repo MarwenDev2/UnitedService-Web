@@ -1,0 +1,100 @@
+<nav class="navbar" [class.sidebar-collapsed]="isCollapsed">
+  
+  <div class="navbar-left">
+    <div class="search-bar">
+      <i class="fas fa-search search-icon"></i>
+      <input 
+        type="text"
+        class="search-input" 
+        placeholder="Search..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearchInput($event)"
+        (focus)="showSearchResults = true">
+      
+      <!-- Search results dropdown -->
+      <div class="search-results" *ngIf="showSearchResults && searchResults.length > 0">
+        <div 
+          class="search-result-item" 
+          *ngFor="let result of searchResults"
+          (click)="navigateTo(result.path)">
+          {{ result.title }}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="navbar-right">
+    <!-- Push Notification Status Indicator -->
+    <div class="notification-status" 
+         [class.active]="isPushEnabled"
+         [title]="isPushEnabled ? 'Push notifications enabled' : 'Push notifications disabled'"
+         (click)="openNotificationSettings()">
+      <i class="fas fa-bell" [class.text-muted]="!isPushEnabled"></i>
+    </div>
+
+    <!-- Database Notifications -->
+    <div class="notification-container">
+      <button class="notification-btn" (click)="toggleNotifications()">
+        <i class="fas fa-inbox"></i>
+        <span *ngIf="unreadCount > 0" class="notification-badge" [@pulse]="pulseState">
+          {{ unreadCount > 9 ? '9+' : unreadCount }}
+        </span>
+      </button>
+
+      <!-- Notification Popup -->
+      <div *ngIf="isPopupVisible" class="notification-popup" [@fadeInOut]>
+        <div class="notification-header">
+          <h3>Notifications</h3>
+        </div>
+        <div class="notification-list">
+          <div *ngIf="notifications.length === 0" class="notification-empty">
+            Aucune notification
+          </div>
+          <div *ngFor="let n of notifications" 
+               class="notification-card" 
+               [class.unread]="!n.read">
+            <div class="notification-message">{{ n.message }}</div>
+            <button *ngIf="!n.read" class="mark-read-btn" (click)="markAsRead(n, $event)" title="Marquer comme lu">
+              ✔
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Menu -->
+    <div class="nav-item" (click)="toggleUserMenu()">
+      <div class="user-avatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="user-menu" [class.show]="showUserMenu" *ngIf="user$ | async as user">
+        <div class="user-info">
+          <div class="user-name">{{ user?.name }}</div>
+          <div class="user-email">{{ user?.email }}</div>
+        </div>
+        <div class="menu-divider"></div>
+        <!-- Add Notification Settings Option -->
+        <a class="menu-item" (click)="openNotificationSettings()">
+          <i class="fas fa-bell"></i>
+          <span>Notification Settings</span>
+        </a>
+        <!-- Add Settings Link -->
+        <a class="menu-item" [routerLink]="['/settings']" (click)="showUserMenu = false">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+        <div class="menu-divider"></div>
+        <a href="#" class="menu-item text-danger" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION SETTINGS MODAL - ADD THIS AT THE BOTTOM -->
+  <app-notification-settings
+    [isVisible]="showNotificationModal"
+    (closed)="closeNotificationModal()">
+  </app-notification-settings>
+</nav>

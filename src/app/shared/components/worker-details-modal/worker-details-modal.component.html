@@ -1,0 +1,107 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="header-left">
+        <i class="fas fa-user-circle"></i>
+        <h2 class="modal-title">Détails</h2>
+      </div>
+      <button class="close-button" (click)="closeModal()" aria-label="Fermer">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body" *ngIf="worker; else loading">
+      <!-- Profile -->
+      <div class="profile-section">
+        <div class="avatar-container">
+          <img 
+            [src]="getAvatar(worker)" 
+            alt="Photo de {{ worker.name }}" 
+            class="worker-avatar"
+            (error)="handleImageError($event, worker)"
+          >
+        </div>
+        <div class="profile-info">
+          <h3 class="worker-name">{{ worker.name }}</h3>
+          <p class="worker-position">{{ worker.position }}</p>
+          <span class="status-badge" [ngClass]="'status-' + worker.status.toLowerCase()">
+            {{ worker.status }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="details-grid">
+        <!-- Email -->
+        <div class="detail-item">
+          <i class="fas fa-envelope"></i>
+          <div class="detail-content">
+            <div class="detail-label">Email</div>
+            <a [href]="'mailto:' + worker.email" class="detail-value">{{ worker.email }}</a>
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="detail-item">
+          <i class="fas fa-phone-alt"></i>
+          <div class="detail-content">
+            <div class="detail-label">Téléphone</div>
+            <a [href]="'tel:' + worker.phone" class="detail-value">{{ worker.phone }}</a>
+          </div>
+        </div>
+
+        <!-- Department -->
+        <div class="detail-item">
+          <i class="fas fa-building"></i>
+          <div class="detail-content">
+            <div class="detail-label">Département</div>
+            <div class="detail-value">{{ worker.department || 'Non spécifié' }}</div>
+          </div>
+        </div>
+
+        <!-- Hire Date -->
+        <div class="detail-item">
+          <i class="fas fa-calendar-alt"></i>
+          <div class="detail-content">
+            <div class="detail-label">Date d'embauche</div>
+            <div class="detail-value">{{ formatDate(worker.creationDate) }}</div>
+          </div>
+        </div>
+
+        <!-- Salary (Hidden for Secretaire) -->
+        <div class="detail-item" *ngIf="!isSecretaire && worker.salary">
+          <i class="fas fa-money-bill-wave"></i>
+          <div class="detail-content">
+            <div class="detail-label">Salaire</div>
+            <div class="detail-value">{{ formatSalary(worker.salary) }}</div>
+          </div>
+        </div>
+
+        <!-- Gender -->
+        <div class="detail-item" *ngIf="worker.gender">
+          <i [class]="worker.gender.toLowerCase() === 'femme' ? 'fas fa-venus' : 'fas fa-mars'"></i>
+          <div class="detail-content">
+            <div class="detail-label">Genre</div>
+            <div class="detail-value">{{ worker.gender }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn-close" (click)="closeModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<ng-template #loading>
+  <div class="loading">
+    <div class="spinner"></div>
+  </div>
+</ng-template>

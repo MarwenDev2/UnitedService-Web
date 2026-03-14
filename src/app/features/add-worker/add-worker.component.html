@@ -1,0 +1,201 @@
+<div class="add-worker-container">
+  <h2>{{ isEditMode ? 'Modifier un salarié' : 'Ajouter un nouveau salarié' }}</h2>
+  <div class="edit-mode-indicator" *ngIf="isEditMode">
+    <i class="fas fa-edit"></i>
+    <span>Vous êtes en mode édition pour {{ originalWorker?.name }}</span>
+  </div>
+  <form [formGroup]="workerForm" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <!-- Left Column -->
+      <div class="form-column">
+        <div class="form-group">
+          <label for="name">Nom complet</label>
+          <input id="name" formControlName="name" placeholder="Entrez le nom complet">
+          <div *ngIf="workerForm.get('name')?.invalid && workerForm.get('name')?.touched" class="error-message">
+            Le nom est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cin">CIN</label>
+          <input id="cin" formControlName="cin" placeholder="Entrez le numéro de CIN">
+          <div *ngIf="workerForm.get('cin')?.invalid && workerForm.get('cin')?.touched" class="error-message">
+            Le CIN doit contenir 8 chiffres.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="department">Département</label>
+          <input id="department" formControlName="department" placeholder="Entrez le département">
+          <div *ngIf="workerForm.get('department')?.invalid && workerForm.get('department')?.touched" class="error-message">
+            Le département est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="position">Poste</label>
+          <input id="position" formControlName="position" placeholder="Entrez le poste">
+          <div *ngIf="workerForm.get('position')?.invalid && workerForm.get('position')?.touched" class="error-message">
+            Le poste est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Téléphone</label>
+          <input id="phone" formControlName="phone" placeholder="Entrez le numéro de téléphone">
+          <div *ngIf="workerForm.get('phone')?.invalid && workerForm.get('phone')?.touched" class="error-message">
+            Le numéro de téléphone doit contenir 8 chiffres.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" formControlName="email" placeholder="Entrez l'adresse email">
+          <div *ngIf="workerForm.get('email')?.invalid && workerForm.get('email')?.touched" class="error-message">
+            L'adresse email est invalide.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="form-column">
+        <div class="form-group">
+          <label for="salary">Salaire (TND)</label>
+          <input id="salary" type="number" formControlName="salary" placeholder="Entrez le salaire">
+          <div *ngIf="workerForm.get('salary')?.invalid && workerForm.get('salary')?.touched" class="error-message">
+            Le salaire est requis.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Genre</label>
+          <select id="gender" formControlName="gender">
+            <option value="Homme">Homme</option>
+            <option value="Femme">Femme</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dateOfBirth">Date de naissance</label>
+          <input id="dateOfBirth" 
+                 type="date" 
+                 formControlName="dateOfBirth"
+                 [max]="maxDate | date:'yyyy-MM-dd'"
+                 class="form-control"
+                 [ngClass]="{'is-invalid': workerForm.get('dateOfBirth')?.invalid && workerForm.get('dateOfBirth')?.touched}">
+          <div *ngIf="workerForm.get('dateOfBirth')?.errors?.['required'] && workerForm.get('dateOfBirth')?.touched" class="error-message">
+            La date de naissance est requise.
+          </div>
+          <div *ngIf="workerForm.get('dateOfBirth')?.errors?.['invalidAge']" class="error-message">
+            {{ workerForm.get('dateOfBirth')?.errors?.['invalidAge'] }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Adresse</label>
+          <textarea id="address" formControlName="address" placeholder="Entrez l'adresse"></textarea>
+          <div *ngIf="workerForm.get('address')?.invalid && workerForm.get('address')?.touched" class="error-message">
+            L'adresse est requise.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="profileImage">Photo de profil</label>
+          <div class="file-upload-container">
+            <label class="file-upload-label" [class.has-file]="selectedFile">
+              <span *ngIf="!selectedFile; else fileSelected">
+                <i class="fas fa-upload"></i> Choisir une photo de profil
+              </span>
+              <ng-template #fileSelected>
+                <i class="fas fa-check-circle"></i> {{ selectedFile?.name }}
+              </ng-template>
+              <input id="profileImage" type="file" 
+                     (change)="onFileSelected($event)" 
+                     accept="image/jpeg,image/png"
+                     class="file-input">
+            </label>
+            <div class="file-requirements">
+              <small>Formats acceptés: JPG, PNG (max 5 Mo)</small>
+            </div>
+            <div class="image-preview" *ngIf="imagePreview">
+              <img [src]="imagePreview" alt="Aperçu de l'image">
+              <button type="button" class="remove-image" (click)="selectedFile = null; imagePreview = null" title="Supprimer la photo">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="relatedFiles">Fichiers liés (CV, contrats, etc.)</label>
+          <div class="file-upload-container" 
+               (dragover)="onDragOver($event)" 
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)">
+            <label class="file-upload-label" [class.has-files]="filePreviews.length > 0" [class.dragover]="isDraggingOver">
+              <i class="fas fa-cloud-upload-alt upload-icon" [class.dragging]="isDraggingOver"></i>
+              <span *ngIf="filePreviews.length === 0">
+                Glissez-déposez des fichiers ici ou <span class="text-primary">parcourir</span>
+              </span>
+              <span *ngIf="filePreviews.length > 0">
+                Ajouter d'autres fichiers
+              </span>
+              <input id="relatedFiles" type="file" 
+                     (change)="onRelatedFilesSelected($event)" 
+                     [accept]="getFileTypesForDisplay()"
+                     multiple
+                     class="file-input">
+            </label>
+            <div class="file-requirements" *ngIf="filePreviews.length === 0">
+              <small>Formats acceptés: {{ getFileTypesForDisplay() }} (max 5 Mo par fichier)</small>
+            </div>
+            <div class="selected-files" *ngIf="filePreviews.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="mb-0">Fichiers sélectionnés ({{getValidFilesCount()}}/{{filePreviews.length}})</h4>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="clearAllFiles()" [disabled]="filePreviews.length === 0">
+                <i class="fas fa-trash-alt me-1"></i> Tout supprimer
+              </button>
+            </div>
+            <div class="file-list">
+              <div *ngFor="let file of filePreviews; let i = index" class="file-item" [class.invalid]="file.error">
+                <div class="file-icon">
+                  <i [class]="getFileIcon(file.name)"></i>
+                </div>
+                <div class="file-info">
+                  <span class="file-name" [title]="file.name">{{file.name}}</span>
+                  <div class="file-details">
+                    <span class="file-size">{{file.size | fileSize}}</span>
+                    <span class="file-status" [class.text-success]="!file.error" [class.text-danger]="file.error">
+                      <i *ngIf="!file.error" class="fas fa-check-circle"></i>
+                      <span *ngIf="file.error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{file.error}}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <button type="button" class="remove-file" (click)="removeFile(i)" title="Supprimer">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="upload-summary mt-2" *ngIf="hasInvalidFiles()">
+              <div class="alert alert-warning py-1 mb-0">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Certains fichiers ne sont pas valides. Veuillez corriger ou supprimer les fichiers en erreur avant de continuer.
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" [routerLink]="['/workers']">Annuler</button>
+      <button type="submit" class="btn btn-primary" [disabled]="workerForm.invalid">
+        {{ isEditMode ? 'Mettre à jour' : 'Ajouter' }}
+      </button>
+    </div>
+  </form>
+</div>
